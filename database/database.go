@@ -2,7 +2,6 @@ package database
 
 import (
 	"database/sql"
-	"fmt"
 	"os"
 
 	_ "github.com/lib/pq"
@@ -14,5 +13,4 @@ func db() {
 	if err != nil {
 		panic(err)
 	}
-	fmt.Println(db.Stats().InUse)
 }
