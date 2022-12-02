@@ -14,6 +14,12 @@ type DeleteCommentBody struct {
 	Token  string
 }
 
+type UpdateCommentBody struct {
+	Content string
+	UserId  int
+	Token   string
+}
+
 func GetCommentById(db *sql.DB) func(c *gin.Context) {
 	return func(c *gin.Context) {
 		id, err := strconv.Atoi(c.Param("id"))
@@ -54,5 +60,31 @@ func DeleteCommentById(db *sql.DB) func(c *gin.Context) {
 		}
 
 		c.JSON(http.StatusOK, "nice")
+	}
+}
+
+func UpdateCommentById(db *sql.DB) func(c *gin.Context) {
+	return func(c *gin.Context) {
+		id, convErr := strconv.Atoi(c.Param("id"))
+		if convErr != nil {
+			panic(convErr)
+		}
+
+		var requestBody UpdateCommentBody
+		bodyErr := c.BindJSON(&requestBody)
+		if bodyErr != nil {
+			panic(bodyErr)
+		}
+
+		status := database.UpdateCommentById(db, id, requestBody.Content,
+			requestBody.UserId, requestBody.Token)
+
+		if !status {
+			c.JSON(http.StatusNotAcceptable, "fail")
+			return
+		}
+
+		c.JSON(http.StatusOK, "nice")
+
 	}
 }

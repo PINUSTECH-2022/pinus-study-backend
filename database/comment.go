@@ -67,6 +67,30 @@ func DeleteCommentById(db *sql.DB, commentId int, userId int,
 	return err == nil
 }
 
+// return true if it runs correctly
+func UpdateCommentById(db *sql.DB, commentId int, content string,
+	userId int, token string) bool {
+	if !isAuthorized(db, commentId, userId, token) {
+		return false
+	}
+
+	if content == "" {
+		return false
+	}
+
+	sql_statement := `
+	UPDATE Comments
+	SET content = $2
+	WHERE id = $1
+		`
+	_, err := db.Exec(sql_statement, commentId, content)
+	if err != nil {
+		panic(err)
+	}
+
+	return err == nil
+}
+
 // if status true, return number of likes
 // else if status is false, return number of dislikes
 func getLikesFromCommentId(db *sql.DB, id int, status bool) int {
