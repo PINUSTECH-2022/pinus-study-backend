@@ -21,11 +21,18 @@ func main() {
 
 	r.GET("/module", router.GetModules(db))
 
-	r.GET("/thread/:id", router.GetThreads(db))
+	r.GET("/thread/:threadid", router.GetThreadById(db))
+	r.PUT("/thread/:threadid", router.EditThreadById(db))
 
-	r.GET("/subcsribes/:moduleid", router.GetSubcsribers(db))
-	r.POST("/subcsribes/:moduleid/:userid", router.Subcsribe(db))
-	r.DELETE("/subcsribes/:moduleid/:userid", router.Unsubcsribe(db))
+	r.GET("/subscribes/:moduleid", router.GetSubscribers(db))
+	r.GET("/subscribes/:moduleid/:userid", router.DoesSubscribe(db))
+	r.POST("/subscribes/:moduleid/:userid", router.Subscribe(db))
+	r.DELETE("/subscribes/:moduleid/:userid", router.Unsubscribe(db))
+
+	r.GET("/likes/thread/:threadid/:userid", router.GetLikeThread(db))
+	r.POST("/likes/thread/:threadid/:userid/:state", router.SetLikeThread(db))
+	r.GET("/likes/comment/:commentid/:userid", router.GetLikeComment(db))
+	r.POST("/likes/comment/:commentid/:userid/:state", router.SetLikeComment(db))
 
 	r.Run() // listen and serve on 0.0.0.0:8080 (for windows "localhost:8080")
 }

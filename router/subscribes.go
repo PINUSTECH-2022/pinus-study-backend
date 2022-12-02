@@ -11,17 +11,17 @@ import (
 
 // Still a bit messy, sql.DB should not be exposed
 // outside of database pkg. However, sufficient for now.
-func GetSubcsribers(db *sql.DB) func(c *gin.Context) {
+func GetSubscribers(db *sql.DB) func(c *gin.Context) {
 	return func(c *gin.Context) {
 		moduleid := c.Param("moduleid")
-		subcsribers := database.GetSubcsribers(db, moduleid)
+		subcsribers := database.GetSubscribers(db, moduleid)
 		c.JSON(http.StatusOK, gin.H{
 			"users": subcsribers,
 		})
 	}
 }
 
-func Subcsribe(db *sql.DB) func(c *gin.Context) {
+func DoesSubscribe(db *sql.DB) func(c *gin.Context) {
 	return func(c *gin.Context) {
 		moduleid := c.Param("moduleid")
 		userid, err := strconv.Atoi(c.Param("userid"))
@@ -33,7 +33,40 @@ func Subcsribe(db *sql.DB) func(c *gin.Context) {
 			panic(err)
 		}
 
-		database.Subcsribe(db, moduleid, userid)
+		res, err2 := database.DoesSubscribe(db, moduleid, userid)
+		if err2 != nil {
+			c.JSON(http.StatusOK, gin.H{
+				"status": "failure",
+				"cause":  err2.Error(),
+			})
+			panic(err2)
+		}
+		c.JSON(http.StatusOK, gin.H{
+			"subscribed": res,
+		})
+	}
+}
+
+func Subscribe(db *sql.DB) func(c *gin.Context) {
+	return func(c *gin.Context) {
+		moduleid := c.Param("moduleid")
+		userid, err := strconv.Atoi(c.Param("userid"))
+		if err != nil {
+			c.JSON(http.StatusOK, gin.H{
+				"status": "failure",
+				"cause":  err.Error(),
+			})
+			panic(err)
+		}
+
+		err2 := database.Subscribe(db, moduleid, userid)
+		if err2 != nil {
+			c.JSON(http.StatusOK, gin.H{
+				"status": "failure",
+				"cause":  err2.Error(),
+			})
+			panic(err2)
+		}
 
 		c.JSON(http.StatusOK, gin.H{
 			"status": "success",
@@ -41,7 +74,7 @@ func Subcsribe(db *sql.DB) func(c *gin.Context) {
 	}
 }
 
-func Unsubcsribe(db *sql.DB) func(c *gin.Context) {
+func Unsubscribe(db *sql.DB) func(c *gin.Context) {
 	return func(c *gin.Context) {
 		moduleid := c.Param("moduleid")
 		userid, err := strconv.Atoi(c.Param("userid"))
@@ -50,10 +83,18 @@ func Unsubcsribe(db *sql.DB) func(c *gin.Context) {
 				"status": "failure",
 				"cause":  err.Error(),
 			})
-			panic(err)
+			return
 		}
 
-		database.Unsubcsribe(db, moduleid, userid)
+		err2 := database.Unsubscribe(db, moduleid, userid)
+		if err2 != nil {
+			c.JSON(http.StatusOK, gin.H{
+				"status": "failure",
+				"cause":  err2.Error(),
+			})
+			panic(err2)
+		}
+
 		c.JSON(http.StatusOK, gin.H{
 			"status": "success",
 		})
