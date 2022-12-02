@@ -1,4 +1,4 @@
-module example/web-service-gin
+module pinus
 
 go 1.19
 
