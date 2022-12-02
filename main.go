@@ -22,5 +22,7 @@ func main() {
 	r.GET("/module", router.GetModules(db))
 	r.GET("/comment/:id", router.GetCommentById(db))
 
+	r.DELETE("/comment/:id", router.DeleteCommentById(db))
+
 	r.Run() // listen and serve on 0.0.0.0:8080 (for windows "localhost:8080")
 }

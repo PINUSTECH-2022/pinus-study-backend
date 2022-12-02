@@ -17,7 +17,7 @@ type Comment struct {
 	CommentChilds []int
 }
 
-func GetCommentById(db *sql.DB, id string) Comment {
+func GetCommentById(db *sql.DB, id int) Comment {
 	sql_statement := `
 	SELECT c.content, u.id, u.username, c.is_deleted, c.timestamp
 	FROM Comments c JOIN Users u ON c.authorid = u.id
@@ -30,10 +30,6 @@ func GetCommentById(db *sql.DB, id string) Comment {
 	defer rows.Close()
 
 	var comment Comment
-
-	if rows == nil {
-		return comment
-	}
 
 	for rows.Next() {
 		err := rows.Scan(&comment.Content, &comment.AuthorId,
@@ -54,9 +50,26 @@ func GetCommentById(db *sql.DB, id string) Comment {
 	return comment
 }
 
+// return true if it runs correctly
+func DeleteCommentById(db *sql.DB, commentId int, userId int,
+	token string) bool {
+	if !isAuthorized(db, commentId, userId, token) {
+		return false
+	}
+
+	sql_statement := `
+	UPDATE Comments
+	SET is_deleted = TRUE
+	WHERE id = $1
+	`
+	_, err := db.Exec(sql_statement, commentId)
+
+	return err == nil
+}
+
 // if status true, return number of likes
 // else if status is false, return number of dislikes
-func getLikesFromCommentId(db *sql.DB, id string, status bool) int {
+func getLikesFromCommentId(db *sql.DB, id int, status bool) int {
 	sql_statement := `
 	SELECT COUNT(*)
 	FROM Likes_Comments
@@ -83,7 +96,7 @@ func getLikesFromCommentId(db *sql.DB, id string, status bool) int {
 	return count
 }
 
-func getChildrensFromCommentId(db *sql.DB, id string) []int {
+func getChildrensFromCommentId(db *sql.DB, id int) []int {
 	sql_statement := `
 	SELECT c.id
 	FROM Comments c
@@ -110,4 +123,25 @@ func getChildrensFromCommentId(db *sql.DB, id string) []int {
 	}
 
 	return childs
+}
+
+// might want to change it later
+func isAuthorized(db *sql.DB, commentId int, userId int, token string) bool {
+	var status bool
+	sql_statement := `
+	SELECT 1
+	FROM Tokens t JOIN Comments c ON t.userid = c.authorid
+	WHERE c.id = $1 AND c.authorid = $2 AND t.token = $3
+	`
+	rows, err := db.Query(sql_statement, commentId, userId, token)
+	if err != nil {
+		panic(err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		status = true
+	}
+
+	return status
 }
