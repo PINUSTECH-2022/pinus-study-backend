@@ -23,5 +23,9 @@ func main() {
 
 	r.GET("/thread/:id", router.GetThreads(db))
 
+	r.GET("/subcsribes/:moduleid", router.GetSubcsribers(db))
+	r.POST("/subcsribes/:moduleid/:userid", router.Subcsribe(db))
+	r.DELETE("/subcsribes/:moduleid/:userid", router.Unsubcsribe(db))
+
 	r.Run() // listen and serve on 0.0.0.0:8080 (for windows "localhost:8080")
 }
