@@ -1,17 +1,18 @@
 package main
 
 import (
-	"pinus/database"
+	"encoding/json"
+	"example/web-service-gin/database"
 	"fmt"
 	"io"
-	_ "github.com/lib/pq"
 	"net/http"
-	"encoding/json"
+
+	_ "github.com/lib/pq"
 )
 
 type modules struct {
-	Title string 
-	ModuleCode string
+	Title       string
+	ModuleCode  string
 	Description string
 }
 

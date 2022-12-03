@@ -3,6 +3,7 @@ package database
 import (
 	"database/sql"
 	"errors"
+	"time"
 
 	_ "github.com/lib/pq"
 )
@@ -109,4 +110,39 @@ func EditThreadById(db *sql.DB, title string, content string, threadid int) erro
 	}
 	defer rows.Close()
 	return nil
+}
+
+func PostComment(db *sql.DB, authorid int, content string, parentid int, threadid int) error {
+	rows, err := db.Query("INSERT INTO Comments (authorid, content, id, is_deleted, parentid, threadid, timestamp) VALUES ($1, $2, $3, $4, $5, $6, $7)", authorid, content, getCommentId(db), false, parentid, threadid, time.Now().Format("2006-01-02 15:04:05"))
+	if err != nil {
+		return errors.New(err.Error())
+	}
+	defer rows.Close()
+	return nil
+}
+
+func getCommentId(db *sql.DB) int {
+	sql_statement := `
+	SELECT COUNT(*)
+	FROM Comments
+	`
+	rows, err := db.Query(sql_statement)
+	if err != nil {
+		panic(err)
+	}
+	defer rows.Close()
+
+	var count int
+	for rows.Next() {
+		err := rows.Scan(&count)
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	if rows.Err() != nil {
+		panic(err)
+	}
+
+	return count + 1
 }
