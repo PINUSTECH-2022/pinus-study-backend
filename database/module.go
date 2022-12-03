@@ -2,18 +2,21 @@ package database
 
 import (
 	"database/sql"
+	"errors"
+	"time"
 
 	_ "github.com/lib/pq"
 )
 
 type Module struct {
-	Id   string
-	Name string
-	Desc string
+	Id              string
+	Name            string
+	Desc            string
+	SubscriberCount int
 }
 
 func GetModules(db *sql.DB) []Module {
-	rows, err := db.Query("SELECT * FROM Modules")
+	rows, err := db.Query("SELECT * FROM Modules LIMIT 10")
 	if err != nil {
 		panic(err)
 	}
@@ -24,6 +27,7 @@ func GetModules(db *sql.DB) []Module {
 	for rows.Next() {
 		var mod Module
 		err := rows.Scan(&mod.Id, &mod.Name, &mod.Desc)
+		mod.SubscriberCount = getSubscriberCount(db, mod.Id)
 		if err != nil {
 			panic(err)
 		}
@@ -35,4 +39,90 @@ func GetModules(db *sql.DB) []Module {
 	}
 
 	return modules
+}
+
+func getSubscriberCount(db *sql.DB, moduleid string) int {
+	sql_statement := `
+	SELECT COUNT(*)
+	FROM Subscribes
+	WHERE moduleid = $1
+	`
+	rows, err := db.Query(sql_statement, moduleid)
+	if err != nil {
+		panic(err)
+	}
+	defer rows.Close()
+
+	var count int
+	for rows.Next() {
+		err := rows.Scan(&count)
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	if rows.Err() != nil {
+		panic(err)
+	}
+
+	return count
+}
+
+func GetModuleByModuleId(db *sql.DB, moduleid string) Module {
+	rows, err := db.Query("SELECT * FROM Modules WHERE id = $1", moduleid)
+	if err != nil {
+		panic(err)
+	}
+	defer rows.Close()
+
+	var mod Module
+
+	for rows.Next() {
+		err := rows.Scan(&mod.Id, &mod.Name, &mod.Desc)
+		mod.SubscriberCount = getSubscriberCount(db, mod.Id)
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	if rows.Err() != nil {
+		panic(err)
+	}
+
+	return mod
+}
+
+func PostThread(db *sql.DB, authorid int, content string, moduleid string, title string) error {
+	rows, err := db.Query("INSERT INTO Threads (authorid, content, id, moduleid, timestamp, title) VALUES ($1, $2, $3, $4, $5, $6)", authorid, content, getThreadId(db), moduleid, time.Now().Format("2006-01-02 15:04:05"), title)
+	if err != nil {
+		return errors.New(err.Error())
+	}
+	defer rows.Close()
+	return nil
+}
+
+func getThreadId(db *sql.DB) int {
+	sql_statement := `
+	SELECT COUNT(*)
+	FROM Threads
+	`
+	rows, err := db.Query(sql_statement)
+	if err != nil {
+		panic(err)
+	}
+	defer rows.Close()
+
+	var count int
+	for rows.Next() {
+		err := rows.Scan(&count)
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	if rows.Err() != nil {
+		panic(err)
+	}
+
+	return count + 1
 }
