@@ -20,10 +20,11 @@ func main() {
 	})
 
 	r.GET("/module", router.GetModules(db))
+	r.GET("/module/:moduleid", router.GetModuleByModuleId(db))
+	r.POST("/module/:moduleid", router.PostThread(db))
+
 	r.GET("/comment/:id", router.GetCommentById(db))
-
 	r.DELETE("/comment/:id", router.DeleteCommentById(db))
-
 	r.PUT("/comment/:id", router.UpdateCommentById(db))
 
 	r.GET("/thread/:threadid", router.GetThreadById(db))
