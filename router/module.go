@@ -12,7 +12,22 @@ import (
 // outside of database pkg. However, sufficient for now.
 func GetModules(db *sql.DB) func(c *gin.Context) {
 	return func(c *gin.Context) {
-		modules := database.GetModules(db)
+		var SearchQuery struct {
+			Keyword string `json:"keyword"`
+			Page    int    `json:"page"`
+		}
+
+		err := c.ShouldBindJSON(&SearchQuery)
+		if err != nil {
+			panic(err)
+		}
+
+		// If page is not specified, default is 1
+		if SearchQuery.Page == 0 {
+			SearchQuery.Page = 1
+		}
+
+		modules := database.GetModules(db, SearchQuery.Keyword, SearchQuery.Page)
 		c.JSON(http.StatusOK, gin.H{
 			"module_list": modules,
 		})

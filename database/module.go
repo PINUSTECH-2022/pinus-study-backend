@@ -15,8 +15,15 @@ type Module struct {
 	SubscriberCount int
 }
 
-func GetModules(db *sql.DB) []Module {
-	rows, err := db.Query("SELECT * FROM Modules LIMIT 10")
+func GetModules(db *sql.DB, keyword string, page int) []Module {
+	sql_statement := `
+	SELECT * FROM MODULES
+	WHERE id LIKE '%' || UPPER($1) || '%'
+	OFFSET $2
+	LIMIT 10
+	`
+
+	rows, err := db.Query(sql_statement, keyword, 10*(page-1))
 	if err != nil {
 		panic(err)
 	}
