@@ -13,6 +13,7 @@ type Thread struct {
 	Title         string
 	Content       string
 	AuthorId      int
+	Username      string
 	Timestamp     string
 	ModuleId      string
 	LikesCount    int
@@ -31,6 +32,23 @@ func GetThreadById(db *sql.DB, threadid string) Thread {
 
 	for rows.Next() {
 		err := rows.Scan(&thread.Id, &thread.Title, &thread.Content, &thread.ModuleId, &thread.AuthorId, &thread.Timestamp)
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	if rows.Err() != nil {
+		panic(err)
+	}
+
+	rows, err = db.Query("SELECT username FROM Users WHERE id = $1", thread.AuthorId)
+	if err != nil {
+		panic(err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		err := rows.Scan(&thread.Username)
 		if err != nil {
 			panic(err)
 		}
