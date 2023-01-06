@@ -48,7 +48,7 @@ func LogIn(db *sql.DB) func(c *gin.Context) {
 			panic(err)
 		}
 
-		success, err2 := database.LogIn(db, User.Email, User.Username, User.Password)
+		success, token, err2 := database.LogIn(db, User.Email, User.Username, User.Password)
 		if err2 != nil {
 			c.JSON(http.StatusOK, gin.H{
 				"status": "failure",
@@ -66,6 +66,7 @@ func LogIn(db *sql.DB) func(c *gin.Context) {
 		//err := database.EditThreadById(db, threadid)
 		c.JSON(http.StatusOK, gin.H{
 			"status": status,
+			"token":  token,
 		})
 	}
 }
