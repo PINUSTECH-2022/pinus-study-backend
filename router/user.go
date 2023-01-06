@@ -62,6 +62,7 @@ func LogIn(db *sql.DB) func(c *gin.Context) {
 			status = "success"
 		} else {
 			status = "failure"
+			token = ""
 		}
 		//err := database.EditThreadById(db, threadid)
 		c.JSON(http.StatusOK, gin.H{

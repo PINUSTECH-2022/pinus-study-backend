@@ -2,34 +2,21 @@ package main
 
 import (
 	"example/web-service-gin/database"
+	"example/web-service-gin/middlewares"
 	"example/web-service-gin/router"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 )
 
-func CORSMiddleware() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
-		c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
-		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With")
-		c.Writer.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS, GET, PUT")
-
-		if c.Request.Method == "OPTIONS" {
-			c.AbortWithStatus(204)
-			return
-		}
-
-		c.Next()
-	}
-}
+// https://seefnasrul.medium.com/create-your-first-go-rest-api-with-jwt-authentication-in-gin-framework-dbe5bda72817
 
 func main() {
 	r := gin.Default()
 
 	db := database.GetDb()
 
-	r.Use(CORSMiddleware())
+	r.Use(middlewares.CORSMiddleware())
 
 	r.GET("/ping", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
@@ -42,7 +29,10 @@ func main() {
 
 	r.GET("/module", router.GetModules(db))
 	r.GET("/module/:moduleid", router.GetModuleByModuleId(db))
-	r.POST("/module/:moduleid", router.PostThread(db))
+
+	protected := r.Group("/protected")
+	protected.Use(middlewares.JwtAuthMiddleware())
+	protected.POST("/module/:moduleid", router.PostThread(db))
 
 	r.GET("/comment/:id", router.GetCommentById(db))
 	r.DELETE("/comment/:id", router.DeleteCommentById(db))
