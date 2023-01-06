@@ -29,28 +29,25 @@ func main() {
 
 	r.GET("/module", router.GetModules(db))
 	r.GET("/module/:moduleid", router.GetModuleByModuleId(db))
-
-	protected := r.Group("/protected")
-	protected.Use(middlewares.JwtAuthMiddleware())
-	protected.POST("/module/:moduleid", router.PostThread(db))
+	r.POST("/module/:moduleid", middlewares.JwtAuthMiddleware(), router.PostThread(db))
 
 	r.GET("/comment/:id", router.GetCommentById(db))
-	r.DELETE("/comment/:id", router.DeleteCommentById(db))
-	r.PUT("/comment/:id", router.UpdateCommentById(db))
+	r.DELETE("/comment/:id", middlewares.JwtAuthMiddleware(), router.DeleteCommentById(db))
+	r.PUT("/comment/:id", middlewares.JwtAuthMiddleware(), router.UpdateCommentById(db))
 
 	r.GET("/thread/:threadid", router.GetThreadById(db))
-	r.PUT("/thread/:threadid", router.EditThreadById(db))
-	r.POST("/thread/:threadid", router.PostComment(db))
+	r.PUT("/thread/:threadid", middlewares.JwtAuthMiddleware(), router.EditThreadById(db))
+	r.POST("/thread/:threadid", middlewares.JwtAuthMiddleware(), router.PostComment(db))
 
 	r.GET("/subscribes/:moduleid", router.GetSubscribers(db))
 	r.GET("/subscribes/:moduleid/:userid", router.DoesSubscribe(db))
-	r.POST("/subscribes/:moduleid/:userid", router.Subscribe(db))
-	r.DELETE("/subscribes/:moduleid/:userid", router.Unsubscribe(db))
+	r.POST("/subscribes/:moduleid/:userid", middlewares.JwtAuthMiddleware(), router.Subscribe(db))
+	r.DELETE("/subscribes/:moduleid/:userid", middlewares.JwtAuthMiddleware(), router.Unsubscribe(db))
 
 	r.GET("/likes/thread/:threadid/:userid", router.GetLikeThread(db))
-	r.POST("/likes/thread/:threadid/:userid/:state", router.SetLikeThread(db))
+	r.POST("/likes/thread/:threadid/:userid/:state", middlewares.JwtAuthMiddleware(), router.SetLikeThread(db))
 	r.GET("/likes/comment/:commentid/:userid", router.GetLikeComment(db))
-	r.POST("/likes/comment/:commentid/:userid/:state", router.SetLikeComment(db))
+	r.POST("/likes/comment/:commentid/:userid/:state", middlewares.JwtAuthMiddleware(), router.SetLikeComment(db))
 
 	r.Run() // listen and serve on 0.0.0.0:8080 (for windows "localhost:8080")
 }
