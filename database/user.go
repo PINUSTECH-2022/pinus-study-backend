@@ -6,6 +6,7 @@ import (
 	"database/sql"
 	"encoding/hex"
 	"errors"
+	"example/web-service-gin/token"
 
 	_ "github.com/lib/pq"
 )
@@ -70,7 +71,7 @@ func SignUp(db *sql.DB, email string, username string, password string) error {
 	return nil
 }
 
-func LogIn(db *sql.DB, email string, username string, password string) (bool, error) {
+func LogIn(db *sql.DB, email string, username string, password string) (bool, string, error) {
 	rows, err := db.Query("SELECT password FROM Users WHERE email = $1 OR username = $2", email, username)
 	if err != nil {
 		panic(err)
@@ -115,7 +116,32 @@ func LogIn(db *sql.DB, email string, username string, password string) (bool, er
 	}
 
 	success := doPasswordsMatch(encryptedPassword, password, salt)
-	return success, nil
+
+	rows, err = db.Query("SELECT id FROM Users WHERE email = $1 OR username = $2", email, username)
+	if err != nil {
+		panic(err)
+	}
+	defer rows.Close()
+
+	var uid int
+
+	for rows.Next() {
+		err := rows.Scan(&uid)
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	if rows.Err() != nil {
+		panic(err)
+	}
+
+	token, err := token.GenerateToken(uid)
+	if err != nil {
+		panic(err)
+	}
+
+	return success, token, nil
 }
 
 func getUserId(db *sql.DB) int {
