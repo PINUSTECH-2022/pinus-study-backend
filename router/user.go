@@ -9,6 +9,11 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+func isEmailValid(e string) bool {
+    emailRegex := regexp.MustCompile(`^[a-z0-9._%+\-]+@[a-z0-9.\-]+\.[a-z]{2,4}$`)
+    return emailRegex.MatchString(e)
+}
+
 func SignUp(db *sql.DB) func(c *gin.Context) {
 	return func(c *gin.Context) {
 		var User struct {
@@ -27,6 +32,14 @@ func SignUp(db *sql.DB) func(c *gin.Context) {
 			c.JSON(http.StatusOK, gin.H{
 				"status": "failure",
 				"cause": "username must be alphanumeric",
+			})
+			return
+		}
+
+		if !isEmailValid(User.Email) {
+			c.JSON(http.StatusOK, gin.H{
+				"status": "failure",
+				"cause": "email is not valid",
 			})
 			return
 		}
