@@ -52,13 +52,14 @@ func PostThread(db *sql.DB) func(c *gin.Context) {
 			AuthorId int    `json:"authorid"`
 			Content  string `json:"content"`
 			Title    string `json:"title"`
+			Tags	 []int	`json:"tags"`
 		}
 		err := c.ShouldBindJSON(&Module)
 		if err != nil {
 			panic(err)
 		}
 
-		err2 := database.PostThread(db, Module.AuthorId, Module.Content, moduleid, Module.Title)
+		err2 := database.PostThread(db, Module.AuthorId, Module.Content, Module.Title, Module.Tags, moduleid)
 		if err2 != nil {
 			c.JSON(http.StatusOK, gin.H{
 				"status": "failure",

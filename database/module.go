@@ -99,21 +99,42 @@ func GetModuleByModuleId(db *sql.DB, moduleid string) Module {
 	return mod
 }
 
-func PostThread(db *sql.DB, authorid int, content string, moduleid string, title string) error {
-	rows, err := db.Query("INSERT INTO Threads (authorid, content, id, moduleid, timestamp, title) VALUES ($1, $2, $3, $4, $5, $6)", authorid, content, getThreadId(db), moduleid, time.Now().Format("2006-01-02 15:04:05"), title)
-	if err != nil {
-		return errors.New(err.Error())
+func PostThread(db *sql.DB, authorid int, content string, title string, tags []int, moduleid string) error {
+
+	tx, err := db.Begin()
+	if (err != nil) {
+		return errors.New("Unable to begin database transaction")
 	}
-	defer rows.Close()
+	defer tx.Rollback()
+
+	newThreadID := getThreadId(tx)
+
+	_, err = tx.Exec("INSERT INTO Threads (authorid, content, id, moduleid, timestamp, title) VALUES ($1, $2, $3, $4, $5, $6)", authorid, content, newThreadID, moduleid, time.Now().Format("2006-01-02 15:04:05"), title)
+	if err != nil {
+		return errors.New("Thread data is malformed.")
+	}
+
+	for _, tagId := range tags {
+		_, err := tx.Exec("INSERT INTO Thread_Tags VALUES ($1, $2)", newThreadID, tagId)
+		if err != nil {
+			return errors.New("Tag data is malformed.")
+		}
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		return errors.New("Unable to commit transaction")
+	}
+
 	return nil
 }
 
-func getThreadId(db *sql.DB) int {
+func getThreadId(tx *sql.Tx) int {
 	sql_statement := `
 	SELECT COUNT(*)
 	FROM Threads
 	`
-	rows, err := db.Query(sql_statement)
+	rows, err := tx.Query(sql_statement)
 	if err != nil {
 		panic(err)
 	}
