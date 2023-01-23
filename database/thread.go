@@ -19,6 +19,7 @@ type Thread struct {
 	LikesCount    int
 	DislikesCount int
 	Comments      []int
+	Tags		  []int
 }
 
 func GetThreadById(db *sql.DB, threadid string) Thread {
@@ -61,6 +62,7 @@ func GetThreadById(db *sql.DB, threadid string) Thread {
 	thread.LikesCount = getLikesFromThreadId(db, thread.Id, true)
 	thread.DislikesCount = getLikesFromThreadId(db, thread.Id, false)
 	thread.Comments = getComments(db, thread.Id)
+	thread.Tags = getTags(db, thread.Id)
 
 	return thread
 }
@@ -104,7 +106,7 @@ func getComments(db *sql.DB, id int) []int {
 	}
 	defer rows.Close()
 
-	var comments []int
+	comments := []int{}
 	for rows.Next() {
 		var comment int
 		err := rows.Scan(&comment)
@@ -119,6 +121,35 @@ func getComments(db *sql.DB, id int) []int {
 	}
 
 	return comments
+}
+
+func getTags(db *sql.DB, id int) []int {
+	sql_statement := `
+	SELECT tagId
+	FROM Thread_Tags tt
+	WHERE tt.threadId = $1
+	`
+	rows, err := db.Query(sql_statement, id)
+	if err != nil {
+		panic(err)
+	}
+	defer rows.Close()
+
+	tags := []int{}
+	for rows.Next() {
+		var tag int
+		err := rows.Scan(&tag)
+		if err != nil {
+			panic(err)
+		}
+		tags = append(tags, tag)
+	}
+
+	if rows.Err() != nil {
+		panic(err)
+	}
+
+	return tags
 }
 
 func EditThreadById(db *sql.DB, title string, content string, threadid int) error {
