@@ -51,8 +51,7 @@ func SignUp(db *sql.DB) func(c *gin.Context) {
 func LogIn(db *sql.DB) func(c *gin.Context) {
 	return func(c *gin.Context) {
 		var User struct {
-			Email    string `json:"email"`
-			Username string `json:"username"`
+			NameOrEmail string `json:"username"`
 			Password string `json:"password"`
 		}
 		err := c.ShouldBindJSON(&User)
@@ -60,7 +59,8 @@ func LogIn(db *sql.DB) func(c *gin.Context) {
 			panic(err)
 		}
 
-		success, token, err2 := database.LogIn(db, User.Email, User.Username, User.Password)
+		success, token, err2 := database.LogIn(db, User.NameOrEmail, User.Password)
+		
 		if err2 != nil {
 			c.JSON(http.StatusOK, gin.H{
 				"status": "failure",
