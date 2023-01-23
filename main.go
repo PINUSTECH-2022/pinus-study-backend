@@ -24,8 +24,9 @@ func main() {
 		})
 	})
 
-	r.GET("/user", router.LogIn(db))
-	r.POST("/user", router.SignUp(db))
+	r.POST("/login", router.LogIn(db))
+	
+	r.POST("/signup", router.SignUp(db))
 
 	r.GET("/module", router.GetModules(db))
 	r.GET("/module/:moduleid", router.GetModuleByModuleId(db))
