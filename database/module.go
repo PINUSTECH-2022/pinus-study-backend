@@ -3,6 +3,7 @@ package database
 import (
 	"database/sql"
 	"errors"
+	"strconv"
 	"time"
 
 	_ "github.com/lib/pq"
@@ -13,6 +14,7 @@ type Module struct {
 	Name            string
 	Desc            string
 	SubscriberCount int
+	Threads         []Thread
 }
 
 func GetModules(db *sql.DB, keyword string, page int) []Module {
@@ -35,6 +37,7 @@ func GetModules(db *sql.DB, keyword string, page int) []Module {
 		var mod Module
 		err := rows.Scan(&mod.Id, &mod.Name, &mod.Desc)
 		mod.SubscriberCount = getSubscriberCount(db, mod.Id)
+		mod.Threads = []Thread{}
 		if err != nil {
 			panic(err)
 		}
@@ -94,6 +97,21 @@ func GetModuleByModuleId(db *sql.DB, moduleid string) Module {
 
 	if rows.Err() != nil {
 		panic(err)
+	}
+
+	thread_ids, err := db.Query("SELECT id FROM Threads WHERE moduleid = $1", mod.Id)
+	if err != nil {
+		panic(err)
+	}
+	defer thread_ids.Close()
+
+	for thread_ids.Next() {
+		var thread_id int
+		err := thread_ids.Scan(&thread_id)
+		if err != nil {
+			panic(err)
+		}
+		mod.Threads = append(mod.Threads, GetThreadById(db, strconv.Itoa(thread_id)))
 	}
 
 	return mod
