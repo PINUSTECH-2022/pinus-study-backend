@@ -29,15 +29,16 @@ func EditThreadById(db *sql.DB) func(c *gin.Context) {
 		}
 
 		var EditedThread struct {
-			Title   string `json:"title"`
-			Content string `json:"content"`
+			Title   *string `json:"title"`
+			Content *string `json:"content"`
+			Tags    []int  `json:"tags"`
 		}
 		err = c.ShouldBindJSON(&EditedThread)
 		if err != nil {
 			panic(err)
 		}
 
-		err2 := database.EditThreadById(db, EditedThread.Title, EditedThread.Content, threadid)
+		err2 := database.EditThreadById(db, EditedThread.Title, EditedThread.Content, EditedThread.Tags, threadid)
 		if err2 != nil {
 			c.JSON(http.StatusOK, gin.H{
 				"status": "failure",

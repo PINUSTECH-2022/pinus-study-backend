@@ -19,6 +19,7 @@ type Thread struct {
 	LikesCount    int
 	DislikesCount int
 	Comments      []int
+	Tags		  []int
 }
 
 func GetThreadById(db *sql.DB, threadid string) Thread {
@@ -61,6 +62,7 @@ func GetThreadById(db *sql.DB, threadid string) Thread {
 	thread.LikesCount = getLikesFromThreadId(db, thread.Id, true)
 	thread.DislikesCount = getLikesFromThreadId(db, thread.Id, false)
 	thread.Comments = getComments(db, thread.Id)
+	thread.Tags = getTags(db, thread.Id)
 
 	return thread
 }
@@ -104,7 +106,7 @@ func getComments(db *sql.DB, id int) []int {
 	}
 	defer rows.Close()
 
-	var comments []int
+	comments := []int{}
 	for rows.Next() {
 		var comment int
 		err := rows.Scan(&comment)
@@ -121,12 +123,76 @@ func getComments(db *sql.DB, id int) []int {
 	return comments
 }
 
-func EditThreadById(db *sql.DB, title string, content string, threadid int) error {
-	rows, err := db.Query("UPDATE Threads SET title = $1, content = $2 WHERE id = $3 ", title, content, threadid)
+func getTags(db *sql.DB, id int) []int {
+	sql_statement := `
+	SELECT tagId
+	FROM Thread_Tags tt
+	WHERE tt.threadId = $1
+	`
+	rows, err := db.Query(sql_statement, id)
 	if err != nil {
-		return errors.New(err.Error())
+		panic(err)
 	}
 	defer rows.Close()
+
+	tags := []int{}
+	for rows.Next() {
+		var tag int
+		err := rows.Scan(&tag)
+		if err != nil {
+			panic(err)
+		}
+		tags = append(tags, tag)
+	}
+
+	if rows.Err() != nil {
+		panic(err)
+	}
+
+	return tags
+}
+
+func EditThreadById(db *sql.DB, title *string, content *string, tags []int, threadid int) error {
+
+	tx, err := db.Begin()
+	if (err != nil) {
+		return errors.New("Unable to begin database transaction")
+	}
+	defer tx.Rollback()
+
+	if (title != nil) {
+		_, err := tx.Exec("UPDATE Threads SET title = $1 WHERE id = $2", title, threadid)
+		if err != nil {
+			return errors.New("Title has improper formatting")
+		}
+	}
+
+	if (content != nil) {
+		_, err := tx.Exec("UPDATE Threads SET content = $1 WHERE id = $2", content, threadid)
+		if err != nil {
+			return errors.New("Content has improper formatting")
+		}
+	}
+
+	if (tags != nil) {
+		_, err := tx.Exec("DELETE FROM Thread_Tags WHERE threadid = $1", threadid)
+		if err != nil {
+			return errors.New("Unable to delete thread tags")
+		}
+
+		for _, tagId := range tags {
+			_, err := tx.Exec("INSERT INTO Thread_Tags VALUES ($1, $2)", threadid, tagId)
+			if err != nil {
+				return errors.New("Tags has improper formatting")
+			}
+		}
+	}
+	
+	err = tx.Commit()
+	if err != nil {
+		return errors.New("Unable to commit transaction")
+	}
+
 	return nil
 }
 
