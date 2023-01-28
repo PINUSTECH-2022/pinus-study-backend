@@ -25,8 +25,10 @@ func main() {
 	})
 
 	r.POST("/login", router.LogIn(db))
-	
+
 	r.POST("/signup", router.SignUp(db))
+
+	r.POST("/me", middlewares.JwtAuthMiddleware(), router.GetPersonalInfo(db))
 
 	r.GET("/module", router.GetModules(db))
 	r.GET("/module/:moduleid", router.GetModuleByModuleId(db))
