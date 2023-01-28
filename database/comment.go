@@ -50,6 +50,33 @@ func GetCommentById(db *sql.DB, id int) Comment {
 	return comment
 }
 
+func getNumberOfCommentsByUser(db *sql.DB, userid int) int {
+	sql_statement := `
+	SELECT COUNT(*)
+	FROM Comments c
+	WHERE c.authorid = $1
+	`
+	rows, err := db.Query(sql_statement, userid)
+	if err != nil {
+		panic(err)
+	}
+	defer rows.Close()
+
+	var count int
+	for rows.Next() {
+		err := rows.Scan(&count)
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	if rows.Err() != nil {
+		panic(err)
+	}
+
+	return count
+}
+
 // return true if it runs correctly
 func DeleteCommentById(db *sql.DB, commentId int, userId int,
 	token string) bool {
@@ -111,6 +138,32 @@ func getLikesFromCommentId(db *sql.DB, id int, status bool) int {
 		if err != nil {
 			panic(err)
 		}
+	}
+
+	if rows.Err() != nil {
+		panic(err)
+	}
+
+	return count
+}
+
+func getNumberOfLikesToUserComments(db *sql.DB, userid int) int {
+	sql_statement := `
+	SELECT c.id
+	FROM Comments c
+	WHERE c.authorid = $1
+	`
+	rows, err := db.Query(sql_statement, userid)
+	if err != nil {
+		panic(err)
+	}
+	defer rows.Close()
+
+	count := 0
+	for rows.Next() {
+		var commentid int
+		rows.Scan(&commentid)
+		count += getLikesFromThreadId(db, commentid, true)
 	}
 
 	if rows.Err() != nil {
