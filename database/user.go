@@ -71,8 +71,8 @@ func SignUp(db *sql.DB, email string, username string, password string) error {
 	return nil
 }
 
-func LogIn(db *sql.DB, email string, username string, password string) (bool, string, error) {
-	rows, err := db.Query("SELECT password FROM Users WHERE email = $1 OR username = $2", email, username)
+func LogIn(db *sql.DB, nameOrEmail string, password string) (bool, string, error) {
+	rows, err := db.Query("SELECT password FROM Users WHERE email = $1 OR username = $1", nameOrEmail)
 	if err != nil {
 		panic(err)
 	}
@@ -91,7 +91,7 @@ func LogIn(db *sql.DB, email string, username string, password string) (bool, st
 		panic(err)
 	}
 
-	rows, err = db.Query("SELECT salt FROM Users WHERE email = $1 OR username = $2", email, username)
+	rows, err = db.Query("SELECT salt FROM Users WHERE email = $1 OR username = $1", nameOrEmail)
 	if err != nil {
 		panic(err)
 	}
@@ -117,7 +117,7 @@ func LogIn(db *sql.DB, email string, username string, password string) (bool, st
 
 	success := doPasswordsMatch(encryptedPassword, password, salt)
 
-	rows, err = db.Query("SELECT id FROM Users WHERE email = $1 OR username = $2", email, username)
+	rows, err = db.Query("SELECT id FROM Users WHERE email = $1 OR username = $1", nameOrEmail)
 	if err != nil {
 		panic(err)
 	}

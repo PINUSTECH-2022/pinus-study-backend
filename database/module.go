@@ -120,7 +120,7 @@ func GetModuleByModuleId(db *sql.DB, moduleid string) Module {
 func PostThread(db *sql.DB, authorid int, content string, title string, tags []int, moduleid string) error {
 
 	tx, err := db.Begin()
-	if (err != nil) {
+	if err != nil {
 		return errors.New("Unable to begin database transaction")
 	}
 	defer tx.Rollback()
