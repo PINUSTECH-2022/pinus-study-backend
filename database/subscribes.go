@@ -72,3 +72,32 @@ func Unsubscribe(db *sql.DB, moduleid string, userid int) error {
 	defer rows.Close()
 	return nil
 }
+
+func getModulesSubscribedByUser(db *sql.DB, userid int) []string {
+	sql_statement := `
+	SELECT s.moduleid
+	FROM Subscribes s
+	WHERE s.userid = $1
+	`
+	rows, err := db.Query(sql_statement, userid)
+	if err != nil {
+		panic(err)
+	}
+	defer rows.Close()
+
+	subscribedModules := []string{}
+	for rows.Next() {
+		var mod string
+		err := rows.Scan(&mod)
+		if err != nil {
+			panic(err)
+		}
+		subscribedModules = append(subscribedModules, mod)
+	}
+
+	if rows.Err() != nil {
+		panic(err)
+	}
+
+	return subscribedModules
+}
