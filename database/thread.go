@@ -19,7 +19,7 @@ type Thread struct {
 	LikesCount    int
 	DislikesCount int
 	Comments      []int
-	Tags		  []int
+	Tags          []int
 }
 
 func GetThreadById(db *sql.DB, threadid string) Thread {
@@ -67,6 +67,62 @@ func GetThreadById(db *sql.DB, threadid string) Thread {
 	return thread
 }
 
+// Return past 5 threads posted by user
+func getRecentThreadsByUser(db *sql.DB, userid int) []Thread {
+	sql_statement := `
+	SELECT t.id
+	FROM Threads t
+	WHERE t.authorid = $1
+	ORDER BY t.timestamp DESC
+	LIMIT 5
+	`
+	rows, err := db.Query(sql_statement, userid)
+	if err != nil {
+		panic(err)
+	}
+	defer rows.Close()
+
+	recentThreads := []Thread{}
+	for rows.Next() {
+		var threadid string
+		rows.Scan(&threadid)
+		recentThreads = append(recentThreads, GetThreadById(db, threadid))
+	}
+
+	if rows.Err() != nil {
+		panic(err)
+	}
+
+	return recentThreads
+}
+
+func getNumberOfThreadsByUser(db *sql.DB, userid int) int {
+	sql_statement := `
+	SELECT COUNT(*)
+	FROM Threads t
+	WHERE t.authorid = $1
+	`
+	rows, err := db.Query(sql_statement, userid)
+	if err != nil {
+		panic(err)
+	}
+	defer rows.Close()
+
+	var count int
+	for rows.Next() {
+		err := rows.Scan(&count)
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	if rows.Err() != nil {
+		panic(err)
+	}
+
+	return count
+}
+
 func getLikesFromThreadId(db *sql.DB, id int, status bool) int {
 	sql_statement := `
 	SELECT COUNT(*)
@@ -85,6 +141,32 @@ func getLikesFromThreadId(db *sql.DB, id int, status bool) int {
 		if err != nil {
 			panic(err)
 		}
+	}
+
+	if rows.Err() != nil {
+		panic(err)
+	}
+
+	return count
+}
+
+func getNumberOfLikesToUserThreads(db *sql.DB, userid int) int {
+	sql_statement := `
+	SELECT t.id
+	FROM Threads t
+	WHERE t.authorid = $1
+	`
+	rows, err := db.Query(sql_statement, userid)
+	if err != nil {
+		panic(err)
+	}
+	defer rows.Close()
+
+	count := 0
+	for rows.Next() {
+		var threadid int
+		rows.Scan(&threadid)
+		count += getLikesFromThreadId(db, threadid, true)
 	}
 
 	if rows.Err() != nil {
@@ -155,26 +237,26 @@ func getTags(db *sql.DB, id int) []int {
 func EditThreadById(db *sql.DB, title *string, content *string, tags []int, threadid int) error {
 
 	tx, err := db.Begin()
-	if (err != nil) {
+	if err != nil {
 		return errors.New("Unable to begin database transaction")
 	}
 	defer tx.Rollback()
 
-	if (title != nil) {
+	if title != nil {
 		_, err := tx.Exec("UPDATE Threads SET title = $1 WHERE id = $2", title, threadid)
 		if err != nil {
 			return errors.New("Title has improper formatting")
 		}
 	}
 
-	if (content != nil) {
+	if content != nil {
 		_, err := tx.Exec("UPDATE Threads SET content = $1 WHERE id = $2", content, threadid)
 		if err != nil {
 			return errors.New("Content has improper formatting")
 		}
 	}
 
-	if (tags != nil) {
+	if tags != nil {
 		_, err := tx.Exec("DELETE FROM Thread_Tags WHERE threadid = $1", threadid)
 		if err != nil {
 			return errors.New("Unable to delete thread tags")
@@ -187,7 +269,7 @@ func EditThreadById(db *sql.DB, title *string, content *string, tags []int, thre
 			}
 		}
 	}
-	
+
 	err = tx.Commit()
 	if err != nil {
 		return errors.New("Unable to commit transaction")
