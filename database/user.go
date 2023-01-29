@@ -169,3 +169,34 @@ func getUserId(db *sql.DB) int {
 
 	return count + 1
 }
+
+func getUsername(db *sql.DB, userid int) (string, error) {
+	sql_statement := `
+	SELECT u.username
+	FROM Users u
+	WHERE u.id = $1
+	`
+	rows, err := db.Query(sql_statement, userid)
+	if err != nil {
+		panic(err)
+	}
+	defer rows.Close()
+
+	var username string
+	for rows.Next() {
+		err := rows.Scan(&username)
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	if rows.Err() != nil {
+		panic(err)
+	}
+
+	if username == "" {
+		return "", errors.New("User not found")
+	}
+
+	return username, nil
+}
