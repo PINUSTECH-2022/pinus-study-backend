@@ -44,19 +44,18 @@ func SignUp(db *sql.DB) func(c *gin.Context) {
 			return
 		}
 
-		err2 := database.SignUp(db, User.Email, User.Username, User.Password)
+		token, err2 := database.SignUp(db, User.Email, User.Username, User.Password)
 		if err2 != nil {
 			c.JSON(http.StatusOK, gin.H{
 				"status": "failure",
 				"cause":  err2.Error(),
 			})
 			return
-			//panic(err2)
 		}
-
-		//err := database.EditThreadById(db, threadid)
+		
 		c.JSON(http.StatusOK, gin.H{
 			"status": "success",
+			"token":  token,
 		})
 	}
 }

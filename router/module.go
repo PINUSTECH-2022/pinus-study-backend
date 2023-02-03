@@ -59,7 +59,7 @@ func PostThread(db *sql.DB) func(c *gin.Context) {
 			panic(err)
 		}
 
-		err2 := database.PostThread(db, Module.AuthorId, Module.Content, Module.Title, Module.Tags, moduleid)
+		threadId, err2 := database.PostThread(db, Module.AuthorId, Module.Content, Module.Title, Module.Tags, moduleid)
 		if err2 != nil {
 			c.JSON(http.StatusOK, gin.H{
 				"status": "failure",
@@ -71,6 +71,7 @@ func PostThread(db *sql.DB) func(c *gin.Context) {
 		//err := database.EditThreadById(db, threadid)
 		c.JSON(http.StatusOK, gin.H{
 			"status": "success",
+			"threadid": threadId,
 		})
 	}
 }

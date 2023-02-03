@@ -278,13 +278,14 @@ func EditThreadById(db *sql.DB, title *string, content *string, tags []int, thre
 	return nil
 }
 
-func PostComment(db *sql.DB, authorid int, content string, parentid int, threadid int) error {
-	rows, err := db.Query("INSERT INTO Comments (authorid, content, id, is_deleted, parentid, threadid, timestamp) VALUES ($1, $2, $3, $4, $5, $6, $7)", authorid, content, getCommentId(db), false, parentid, threadid, time.Now().Format("2006-01-02 15:04:05"))
+func PostComment(db *sql.DB, authorid int, content string, parentid int, threadid int) (int, error) {
+	newCommentId := getCommentId(db)
+	rows, err := db.Query("INSERT INTO Comments (authorid, content, id, is_deleted, parentid, threadid, timestamp) VALUES ($1, $2, $3, $4, $5, $6, $7)", authorid, content, newCommentId, false, parentid, threadid, time.Now().Format("2006-01-02 15:04:05"))
 	if err != nil {
-		return errors.New(err.Error())
+		return -1, errors.New(err.Error())
 	}
 	defer rows.Close()
-	return nil
+	return newCommentId, nil
 }
 
 func getCommentId(db *sql.DB) int {

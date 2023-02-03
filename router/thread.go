@@ -71,7 +71,7 @@ func PostComment(db *sql.DB) func(c *gin.Context) {
 			panic(err)
 		}
 
-		err2 := database.PostComment(db, Comment.AuthorId, Comment.Content, Comment.ParentId, threadid)
+		commentId, err2 := database.PostComment(db, Comment.AuthorId, Comment.Content, Comment.ParentId, threadid)
 		if err2 != nil {
 			c.JSON(http.StatusOK, gin.H{
 				"status": "failure",
@@ -83,6 +83,7 @@ func PostComment(db *sql.DB) func(c *gin.Context) {
 		//err := database.EditThreadById(db, threadid)
 		c.JSON(http.StatusOK, gin.H{
 			"status": "success",
+			"commentid": commentId,
 		})
 	}
 }
