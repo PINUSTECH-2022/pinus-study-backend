@@ -19,7 +19,11 @@ func GetModules(db *sql.DB) func(c *gin.Context) {
 
 		err := c.ShouldBindJSON(&SearchQuery)
 		if err != nil {
-			panic(err)
+			c.JSON(http.StatusBadRequest, gin.H{
+				"status": "failure",
+				"cause": "Request body is malformed",
+			})
+			return
 		}
 
 		// If page is not specified, default is 1
@@ -49,14 +53,18 @@ func PostThread(db *sql.DB) func(c *gin.Context) {
 		moduleid := c.Param("moduleid")
 
 		var Module struct {
-			AuthorId int    `json:"authorid"`
-			Content  string `json:"content"`
-			Title    string `json:"title"`
-			Tags	 []int	`json:"tags"`
+			AuthorId int    `json:"authorid" binding:"required"`
+			Content  string `json:"content" binding:"required"`
+			Title    string `json:"title" binding:"required"`
+			Tags	 []int	`json:"tags" binding:"required"`
 		}
 		err := c.ShouldBindJSON(&Module)
 		if err != nil {
-			panic(err)
+			c.JSON(http.StatusBadRequest, gin.H{
+				"status": "failure",
+				"cause": "Request body is malformed",
+			})
+			return
 		}
 
 		err2 := database.PostThread(db, Module.AuthorId, Module.Content, Module.Title, Module.Tags, moduleid)
@@ -65,7 +73,7 @@ func PostThread(db *sql.DB) func(c *gin.Context) {
 				"status": "failure",
 				"cause":  err2.Error(),
 			})
-			panic(err2)
+			return
 		}
 
 		//err := database.EditThreadById(db, threadid)

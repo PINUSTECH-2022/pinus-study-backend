@@ -24,7 +24,11 @@ func GetCommentById(db *sql.DB) func(c *gin.Context) {
 	return func(c *gin.Context) {
 		id, err := strconv.Atoi(c.Param("id"))
 		if err != nil {
-			panic(err)
+			c.JSON(http.StatusBadRequest, gin.H{
+				"status": "failure",
+				"cause": "Comment id is malformed",
+			})
+			return
 		}
 		comment := database.GetCommentById(db, id)
 
@@ -42,13 +46,21 @@ func DeleteCommentById(db *sql.DB) func(c *gin.Context) {
 	return func(c *gin.Context) {
 		id, convErr := strconv.Atoi(c.Param("id"))
 		if convErr != nil {
-			panic(convErr)
+			c.JSON(http.StatusBadRequest, gin.H{
+				"status": "failure",
+				"cause": "Comment id is malformed",
+			})
+			return
 		}
 
 		var requestBody DeleteCommentBody
 		bodyErr := c.BindJSON(&requestBody)
 		if bodyErr != nil {
-			panic(bodyErr)
+			c.JSON(http.StatusBadRequest, gin.H{
+				"status": "failure",
+				"cause": "Request body is malformed",
+			})
+			return
 		}
 
 		status := database.DeleteCommentById(db, id, requestBody.UserId,
@@ -67,13 +79,20 @@ func UpdateCommentById(db *sql.DB) func(c *gin.Context) {
 	return func(c *gin.Context) {
 		id, convErr := strconv.Atoi(c.Param("id"))
 		if convErr != nil {
-			panic(convErr)
+			c.JSON(http.StatusBadRequest, gin.H{
+				"status": "failure",
+				"cause": "Comment id is malformed",
+			})
+			return
 		}
 
 		var requestBody UpdateCommentBody
 		bodyErr := c.BindJSON(&requestBody)
 		if bodyErr != nil {
-			panic(bodyErr)
+			c.JSON(http.StatusBadRequest, gin.H{
+				"status": "failure",
+				"cause": "Request body is malformed",
+			})
 		}
 
 		status := database.UpdateCommentById(db, id, requestBody.Content,
