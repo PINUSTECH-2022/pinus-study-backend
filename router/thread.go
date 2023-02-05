@@ -25,7 +25,11 @@ func EditThreadById(db *sql.DB) func(c *gin.Context) {
 	return func(c *gin.Context) {
 		threadid, err := strconv.Atoi(c.Param("threadid"))
 		if err != nil {
-			panic(err)
+			c.JSON(http.StatusBadRequest, gin.H{
+				"status": "failure",
+				"cause": "Thread id is malformed",
+			})
+			return
 		}
 
 		var EditedThread struct {
@@ -35,7 +39,11 @@ func EditThreadById(db *sql.DB) func(c *gin.Context) {
 		}
 		err = c.ShouldBindJSON(&EditedThread)
 		if err != nil {
-			panic(err)
+			c.JSON(http.StatusBadRequest, gin.H{
+				"status": "failure",
+				"cause": "Request body is malformed",
+			})
+			return
 		}
 
 		err2 := database.EditThreadById(db, EditedThread.Title, EditedThread.Content, EditedThread.Tags, threadid)
@@ -44,7 +52,7 @@ func EditThreadById(db *sql.DB) func(c *gin.Context) {
 				"status": "failure",
 				"cause":  err2.Error(),
 			})
-			panic(err2)
+			return
 		}
 
 		//err := database.EditThreadById(db, threadid)
@@ -58,17 +66,25 @@ func PostComment(db *sql.DB) func(c *gin.Context) {
 	return func(c *gin.Context) {
 		threadid, err := strconv.Atoi(c.Param("threadid"))
 		if err != nil {
-			panic(err)
+			c.JSON(http.StatusBadRequest, gin.H{
+				"status": "failure",
+				"cause": "Thread id is malformed",
+			})
+			return
 		}
 
 		var Comment struct {
-			AuthorId int    `json:"authorid"`
-			Content  string `json:"content"`
-			ParentId int    `json:"parentid"`
+			AuthorId int    `json:"authorid" binding:"required"`
+			Content  string `json:"content" binding:"required"`
+			ParentId int    `json:"parentid" binding:"required"`
 		}
 		err = c.ShouldBindJSON(&Comment)
 		if err != nil {
-			panic(err)
+			c.JSON(http.StatusBadRequest, gin.H{
+				"status": "failure",
+				"cause": "Request body is malformed",
+			})
+			return
 		}
 
 		commentId, err2 := database.PostComment(db, Comment.AuthorId, Comment.Content, Comment.ParentId, threadid)
@@ -77,7 +93,7 @@ func PostComment(db *sql.DB) func(c *gin.Context) {
 				"status": "failure",
 				"cause":  err2.Error(),
 			})
-			panic(err2)
+			return
 		}
 
 		//err := database.EditThreadById(db, threadid)

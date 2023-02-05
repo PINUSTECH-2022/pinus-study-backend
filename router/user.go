@@ -17,13 +17,17 @@ func isEmailValid(e string) bool {
 func SignUp(db *sql.DB) func(c *gin.Context) {
 	return func(c *gin.Context) {
 		var User struct {
-			Email    string `json:"email"`
-			Username string `json:"username"`
-			Password string `json:"password"`
+			Email    string `json:"email" binding:"required"`
+			Username string `json:"username" binding:"required"`
+			Password string `json:"password" binding:"required"`
 		}
 		err := c.ShouldBindJSON(&User)
 		if err != nil {
-			panic(err)
+			c.JSON(http.StatusBadRequest, gin.H{
+				"status": "failure",
+				"cause": "Request body is malformed",
+			})
+			return
 		}
 
 		is_alphanumeric := regexp.MustCompile(`^[a-zA-Z0-9]*$`).MatchString(User.Username)
@@ -52,7 +56,7 @@ func SignUp(db *sql.DB) func(c *gin.Context) {
 			})
 			return
 		}
-		
+    
 		c.JSON(http.StatusOK, gin.H{
 			"status": "success",
 			"token":  token,
@@ -63,12 +67,16 @@ func SignUp(db *sql.DB) func(c *gin.Context) {
 func LogIn(db *sql.DB) func(c *gin.Context) {
 	return func(c *gin.Context) {
 		var User struct {
-			NameOrEmail string `json:"username"`
-			Password string `json:"password"`
+			NameOrEmail string `json:"username" binding:"required"`
+			Password string `json:"password" binding:"required"`
 		}
 		err := c.ShouldBindJSON(&User)
 		if err != nil {
-			panic(err)
+			c.JSON(http.StatusBadRequest, gin.H{
+				"status": "failure",
+				"cause": "Request body is malformed",
+			})
+			return
 		}
 
 		success, token, err2 := database.LogIn(db, User.NameOrEmail, User.Password)
@@ -78,7 +86,7 @@ func LogIn(db *sql.DB) func(c *gin.Context) {
 				"status": "failure",
 				"cause":  err2.Error(),
 			})
-			panic(err2)
+			return
 		}
 
 		var status string
@@ -88,7 +96,7 @@ func LogIn(db *sql.DB) func(c *gin.Context) {
 			status = "failure"
 			token = ""
 		}
-		//err := database.EditThreadById(db, threadid)
+		
 		c.JSON(http.StatusOK, gin.H{
 			"status": status,
 			"token":  token,
