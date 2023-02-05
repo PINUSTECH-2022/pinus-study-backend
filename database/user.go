@@ -81,8 +81,8 @@ func LogIn(db *sql.DB, nameOrEmail string, password string) (bool, string, error
 
 	var (
 		encryptedPassword string
-		saltString string
-		uid int
+		saltString        string
+		uid               int
 	)
 
 	err := db.QueryRow("SELECT password, salt, id FROM Users WHERE email = $1 OR username = $1", nameOrEmail).Scan(&encryptedPassword, &saltString, &uid)
@@ -96,9 +96,22 @@ func LogIn(db *sql.DB, nameOrEmail string, password string) (bool, string, error
 	}
 
 	success := doPasswordsMatch(encryptedPassword, password, salt)
+	if !success {
+		return success, "", nil
+	}
 
 	token, err3 := token.GenerateToken(uid)
 	if err3 != nil {
+		panic(err)
+	}
+
+	userid, err := getUserIdFromNameOrEmail(db, nameOrEmail)
+	if err != nil {
+		panic(err)
+	}
+
+	err = storeUserIdAndJWT(db, userid, token)
+	if err != nil {
 		panic(err)
 	}
 
@@ -160,4 +173,49 @@ func getUsername(db *sql.DB, userid int) (string, error) {
 	}
 
 	return username, nil
+}
+
+func getUserIdFromNameOrEmail(db *sql.DB, nameOrEmail string) (int, error) {
+	sql_statement := `
+	SELECT u.id
+	FROM Users u
+	WHERE u.username = $1 OR u.email = $1
+	`
+	rows, err := db.Query(sql_statement, nameOrEmail)
+	if err != nil {
+		panic(err)
+	}
+	defer rows.Close()
+
+	userid := -1
+	for rows.Next() {
+		err := rows.Scan(&userid)
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	if rows.Err() != nil {
+		panic(err)
+	}
+
+	if userid == -1 {
+		return -1, errors.New("Userid not found")
+	}
+
+	return userid, nil
+}
+
+func storeUserIdAndJWT(db *sql.DB, userid int, token string) error {
+	sql_statement := `
+	INSERT INTO tokens(userid, token) VALUES($1, $2)
+	`
+	// fmt.Println(time.Now().Format("2025-01-02"))
+	rows, err := db.Query(sql_statement, userid, token)
+	if err != nil {
+		panic(err)
+	}
+	defer rows.Close()
+
+	return nil
 }

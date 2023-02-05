@@ -1,2 +1,3 @@
 # Ignore database env file.
 /database/.env
+node_modules
