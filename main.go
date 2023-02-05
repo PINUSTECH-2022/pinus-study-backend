@@ -30,6 +30,8 @@ func main() {
 
 	r.POST("/me", middlewares.JwtAuthMiddleware(), router.GetPersonalInfo(db))
 
+	r.GET("/user/:userid", router.GetUserInfoByID(db))
+
 	r.POST("/module", router.GetModules(db))
 	r.GET("/module/:moduleid", router.GetModuleByModuleId(db))
 	r.POST("/module/:moduleid", middlewares.JwtAuthMiddleware(), router.PostThread(db))

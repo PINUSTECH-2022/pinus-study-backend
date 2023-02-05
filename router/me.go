@@ -25,7 +25,7 @@ func GetPersonalInfo(db *sql.DB) func(c *gin.Context) {
 				"status": "failure",
 				"cause":  err2.Error(),
 			})
-			panic(err2)
+			return
 		}
 		c.JSON(http.StatusOK, info)
 
