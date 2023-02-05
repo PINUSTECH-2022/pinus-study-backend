@@ -17,7 +17,7 @@ func GetLikeThread(db *sql.DB) func(c *gin.Context) {
 				"status": "failure",
 				"cause":  err.Error(),
 			})
-			panic(err)
+			return
 		}
 
 		userid, err2 := strconv.Atoi(c.Param("userid"))
@@ -26,7 +26,7 @@ func GetLikeThread(db *sql.DB) func(c *gin.Context) {
 				"status": "failure",
 				"cause":  err2.Error(),
 			})
-			panic(err2)
+			return
 		}
 
 		state, err3 := database.GetLikeThread(db, threadid, userid)
@@ -35,7 +35,7 @@ func GetLikeThread(db *sql.DB) func(c *gin.Context) {
 				"status": "failure",
 				"cause":  err3.Error(),
 			})
-			panic(err3)
+			return
 		}
 		c.JSON(http.StatusOK, gin.H{
 			"state": state,
@@ -51,7 +51,7 @@ func SetLikeThread(db *sql.DB) func(c *gin.Context) {
 				"status": "failure",
 				"cause":  err.Error(),
 			})
-			panic(err)
+			return
 		}
 
 		userid, err2 := strconv.Atoi(c.Param("userid"))
@@ -60,7 +60,7 @@ func SetLikeThread(db *sql.DB) func(c *gin.Context) {
 				"status": "failure",
 				"cause":  err2.Error(),
 			})
-			panic(err2)
+			return
 		}
 
 		state, err3 := strconv.Atoi(c.Param("state"))
@@ -69,7 +69,7 @@ func SetLikeThread(db *sql.DB) func(c *gin.Context) {
 				"status": "failure",
 				"cause":  err3.Error(),
 			})
-			panic(err3)
+			return
 		}
 
 		if state != 0 && state != 1 && state != -1 {
@@ -86,7 +86,7 @@ func SetLikeThread(db *sql.DB) func(c *gin.Context) {
 				"status": "failure",
 				"cause":  err4.Error(),
 			})
-			panic(err4)
+			return
 		}
 
 		c.JSON(http.StatusOK, gin.H{
@@ -103,7 +103,7 @@ func GetLikeComment(db *sql.DB) func(c *gin.Context) {
 				"status": "failure",
 				"cause":  err.Error(),
 			})
-			panic(err)
+			return
 		}
 
 		userid, err2 := strconv.Atoi(c.Param("userid"))
@@ -112,7 +112,7 @@ func GetLikeComment(db *sql.DB) func(c *gin.Context) {
 				"status": "failure",
 				"cause":  err2.Error(),
 			})
-			panic(err2)
+			return
 		}
 
 		state, err3 := database.GetLikeComment(db, commentid, userid)
@@ -121,7 +121,7 @@ func GetLikeComment(db *sql.DB) func(c *gin.Context) {
 				"status": "failure",
 				"cause":  err3.Error(),
 			})
-			panic(err3)
+			return
 		}
 		c.JSON(http.StatusOK, gin.H{
 			"state": state,
@@ -137,7 +137,7 @@ func SetLikeComment(db *sql.DB) func(c *gin.Context) {
 				"status": "failure",
 				"cause":  err.Error(),
 			})
-			panic(err)
+			return
 		}
 
 		userid, err2 := strconv.Atoi(c.Param("userid"))
@@ -146,7 +146,7 @@ func SetLikeComment(db *sql.DB) func(c *gin.Context) {
 				"status": "failure",
 				"cause":  err2.Error(),
 			})
-			panic(err2)
+			return
 		}
 
 		state, err3 := strconv.Atoi(c.Param("state"))
@@ -155,7 +155,7 @@ func SetLikeComment(db *sql.DB) func(c *gin.Context) {
 				"status": "failure",
 				"cause":  err3.Error(),
 			})
-			panic(err3)
+			return
 		}
 
 		if state != 0 && state != 1 && state != -1 {
@@ -172,7 +172,7 @@ func SetLikeComment(db *sql.DB) func(c *gin.Context) {
 				"status": "failure",
 				"cause":  err4.Error(),
 			})
-			panic(err4)
+			return
 		}
 
 		c.JSON(http.StatusOK, gin.H{

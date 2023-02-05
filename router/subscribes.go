@@ -30,7 +30,7 @@ func DoesSubscribe(db *sql.DB) func(c *gin.Context) {
 				"status": "failure",
 				"cause":  err.Error(),
 			})
-			panic(err)
+			return
 		}
 
 		res, err2 := database.DoesSubscribe(db, moduleid, userid)
@@ -39,7 +39,7 @@ func DoesSubscribe(db *sql.DB) func(c *gin.Context) {
 				"status": "failure",
 				"cause":  err2.Error(),
 			})
-			panic(err2)
+			return
 		}
 		c.JSON(http.StatusOK, gin.H{
 			"subscribed": res,
@@ -56,7 +56,7 @@ func Subscribe(db *sql.DB) func(c *gin.Context) {
 				"status": "failure",
 				"cause":  err.Error(),
 			})
-			panic(err)
+			return
 		}
 
 		err2 := database.Subscribe(db, moduleid, userid)
@@ -65,7 +65,7 @@ func Subscribe(db *sql.DB) func(c *gin.Context) {
 				"status": "failure",
 				"cause":  err2.Error(),
 			})
-			panic(err2)
+			return
 		}
 
 		c.JSON(http.StatusOK, gin.H{
@@ -92,7 +92,7 @@ func Unsubscribe(db *sql.DB) func(c *gin.Context) {
 				"status": "failure",
 				"cause":  err2.Error(),
 			})
-			panic(err2)
+			return
 		}
 
 		c.JSON(http.StatusOK, gin.H{
