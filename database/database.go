@@ -28,5 +28,11 @@ func GetDb() *sql.DB {
 		panic(err)
 	}
 
+	// Eagerly starts a connection with db
+	err = db.Ping()
+	if err != nil {
+		panic(err)
+	}
+
 	return db
 }

@@ -17,9 +17,14 @@ type Module struct {
 	Threads         []Thread
 }
 
-func GetModules(db *sql.DB, keyword string, page int) []Module {
+type ModuleKey struct {
+	Id				string
+	Name			string
+}
+
+func GetModules(db *sql.DB, keyword string, page int) []ModuleKey {
 	sql_statement := `
-	SELECT * FROM MODULES
+	SELECT id, name FROM MODULES
 	WHERE id LIKE '%' || UPPER($1) || '%'
 	OFFSET $2
 	LIMIT 10
@@ -31,13 +36,11 @@ func GetModules(db *sql.DB, keyword string, page int) []Module {
 	}
 	defer rows.Close()
 
-	var modules []Module
+	var modules []ModuleKey
 
 	for rows.Next() {
-		var mod Module
-		err := rows.Scan(&mod.Id, &mod.Name, &mod.Desc)
-		mod.SubscriberCount = getSubscriberCount(db, mod.Id)
-		mod.Threads = []Thread{}
+		var mod ModuleKey
+		err := rows.Scan(&mod.Id, &mod.Name)
 		if err != nil {
 			panic(err)
 		}
