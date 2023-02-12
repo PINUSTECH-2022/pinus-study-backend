@@ -4,51 +4,25 @@ import (
 	"database/sql"
 	"example/web-service-gin/database"
 	"net/http"
-	"regexp"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
 
-func isEmailValid(e string) bool {
-	emailRegex := regexp.MustCompile(`^[a-z0-9._%+\-]+@[a-z0-9.\-]+\.[a-z]{2,4}$`)
-	return emailRegex.MatchString(e)
-}
+func GetUserInfoByID(db* sql.DB) func(c * gin.Context) {
+	return func (c * gin.Context) {
+		userId, err1 := strconv.Atoi(c.Param("userid"))
 
-func SignUp(db *sql.DB) func(c *gin.Context) {
-	return func(c *gin.Context) {
-		var User struct {
-			Email    string `json:"email" binding:"required"`
-			Username string `json:"username" binding:"required"`
-			Password string `json:"password" binding:"required"`
-		}
-		err := c.ShouldBindJSON(&User)
-		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{
-				"status": "failure",
-				"cause":  "Request body is malformed",
-			})
-			return
-		}
-
-		is_alphanumeric := regexp.MustCompile(`^[a-zA-Z0-9]*$`).MatchString(User.Username)
-
-		if !is_alphanumeric {
+		if err1 != nil {
 			c.JSON(http.StatusOK, gin.H{
 				"status": "failure",
-				"cause":  "username must be alphanumeric",
+				"cause": "invalid user id",
 			})
 			return
 		}
 
-		if !isEmailValid(User.Email) {
-			c.JSON(http.StatusOK, gin.H{
-				"status": "failure",
-				"cause":  "email is not valid",
-			})
-			return
-		}
-
-		token, err2 := database.SignUp(db, User.Email, User.Username, User.Password)
+		info, err2 := database.GetUserInfoByID(db, userId)
+		
 		if err2 != nil {
 			c.JSON(http.StatusOK, gin.H{
 				"status": "failure",
@@ -56,53 +30,6 @@ func SignUp(db *sql.DB) func(c *gin.Context) {
 			})
 			return
 		}
-
-		c.JSON(http.StatusOK, gin.H{
-			"status": "success",
-			"token":  token,
-		})
-	}
-}
-
-func LogIn(db *sql.DB) func(c *gin.Context) {
-	return func(c *gin.Context) {
-		var User struct {
-			NameOrEmail string `json:"username" binding:"required"`
-			Password    string `json:"password" binding:"required"`
-		}
-		err := c.ShouldBindJSON(&User)
-		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{
-				"status": "failure",
-				"cause":  "Request body is malformed",
-			})
-			return
-		}
-		// fmt.Println("generating token")
-		success, token, err2 := database.LogIn(db, User.NameOrEmail, User.Password)
-		// fmt.Println("token generated")
-		// fmt.Println(token)
-		// fmt.Println(err2)
-
-		if err2 != nil {
-			c.JSON(http.StatusOK, gin.H{
-				"status": "failure",
-				"cause":  err2.Error(),
-			})
-			return
-		}
-
-		var status string
-		if success {
-			status = "success"
-		} else {
-			status = "failure due to wrong password"
-			token = ""
-		}
-
-		c.JSON(http.StatusOK, gin.H{
-			"status": status,
-			"token":  token,
-		})
+		c.JSON(http.StatusOK, info)
 	}
 }
