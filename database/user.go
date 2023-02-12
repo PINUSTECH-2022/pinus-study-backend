@@ -89,3 +89,34 @@ func getUsername(db *sql.DB, userid int) (string, error) {
 
 	return username, nil
 }
+
+func getUserIdFromNameOrEmail(db *sql.DB, nameOrEmail string) (int, error) {
+	sql_statement := `
+	SELECT u.id
+	FROM Users u
+	WHERE u.username = $1 OR u.email = $1
+	`
+	rows, err := db.Query(sql_statement, nameOrEmail)
+	if err != nil {
+		panic(err)
+	}
+	defer rows.Close()
+
+	userid := -1
+	for rows.Next() {
+		err := rows.Scan(&userid)
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	if rows.Err() != nil {
+		panic(err)
+	}
+
+	if userid == -1 {
+		return -1, errors.New("Userid not found")
+	}
+
+	return userid, nil
+}

@@ -5,7 +5,6 @@ import (
 	"crypto/sha512"
 	"database/sql"
 	"encoding/hex"
-	"errors"
 	"example/web-service-gin/token"
 
 	_ "github.com/lib/pq"
@@ -58,88 +57,76 @@ func doPasswordsMatch(hashedPassword, currPassword string, salt []byte) bool {
 	return hashedPassword == currPasswordHash
 }
 
-func SignUp(db *sql.DB, email string, username string, password string) error {
+func SignUp(db *sql.DB, email string, username string, password string) (string, error) {
 	salt := generateRandomSalt()
 	saltString := hex.EncodeToString(salt)
 	encryptedPassword := hashPassword(password, salt)
 
-	rows, err := db.Query("INSERT INTO Users (id, email, username, password, salt) VALUES ($1, $2, $3, $4, $5)", getUserId(db), email, username, encryptedPassword, saltString)
+	nexId := getUserId(db)
+	_, err := db.Exec("INSERT INTO Users (id, email, username, password, salt) VALUES ($1, $2, $3, $4, $5)", nexId, email, username, encryptedPassword, saltString)
 	if err != nil {
-		return errors.New(err.Error() + "12312312")
+		return "", err
 	}
-	defer rows.Close()
-	return nil
+
+	token, err2 := token.GenerateToken(nexId)
+	if err2 != nil {
+		return "", err2
+	}
+
+	return token, nil
 }
 
 func LogIn(db *sql.DB, nameOrEmail string, password string) (bool, string, error) {
-	rows, err := db.Query("SELECT password FROM Users WHERE email = $1 OR username = $1", nameOrEmail)
+
+	var (
+		encryptedPassword string
+		saltString        string
+		uid               int
+	)
+
+	err := db.QueryRow("SELECT password, salt, id FROM Users WHERE email = $1 OR username = $1", nameOrEmail).Scan(&encryptedPassword, &saltString, &uid)
 	if err != nil {
 		panic(err)
 	}
-	defer rows.Close()
 
-	var encryptedPassword string
-
-	for rows.Next() {
-		err := rows.Scan(&encryptedPassword)
-		if err != nil {
-			panic(err)
-		}
-	}
-
-	if rows.Err() != nil {
-		panic(err)
-	}
-
-	rows, err = db.Query("SELECT salt FROM Users WHERE email = $1 OR username = $1", nameOrEmail)
-	if err != nil {
-		panic(err)
-	}
-	defer rows.Close()
-
-	var saltString string
-
-	for rows.Next() {
-		err := rows.Scan(&saltString)
-		if err != nil {
-			panic(err)
-		}
-	}
-
-	if rows.Err() != nil {
-		panic(err)
-	}
-
-	salt, err := hex.DecodeString(saltString)
-	if err != nil {
-		panic(err)
+	salt, err2 := hex.DecodeString(saltString)
+	if err2 != nil {
+		panic(err2)
 	}
 
 	success := doPasswordsMatch(encryptedPassword, password, salt)
+	if !success {
+		return success, "", nil
+	}
 
-	rows, err = db.Query("SELECT id FROM Users WHERE email = $1 OR username = $1", nameOrEmail)
+	token, err3 := token.GenerateToken(uid)
+	if err3 != nil {
+		panic(err)
+	}
+
+	userid, err := getUserIdFromNameOrEmail(db, nameOrEmail)
 	if err != nil {
 		panic(err)
 	}
-	defer rows.Close()
 
-	var uid int
-
-	for rows.Next() {
-		err := rows.Scan(&uid)
-		if err != nil {
-			panic(err)
-		}
-	}
-
-	if rows.Err() != nil {
-		panic(err)
-	}
-
-	token, err := token.GenerateToken(uid)
+	err = storeUserIdAndJWT(db, userid, token)
 	if err != nil {
 		panic(err)
 	}
 
 	return success, token, nil
+}
+
+func storeUserIdAndJWT(db *sql.DB, userid int, token string) error {
+	sql_statement := `
+	INSERT INTO tokens(userid, token) VALUES($1, $2)
+	`
+	// fmt.Println(time.Now().Format("2025-01-02"))
+	rows, err := db.Query(sql_statement, userid, token)
+	if err != nil {
+		panic(err)
+	}
+	defer rows.Close()
+
+	return nil
 }

@@ -11,12 +11,16 @@ import (
 func GetPersonalInfo(db *sql.DB) func(c *gin.Context) {
 	return func(c *gin.Context) {
 		var User struct {
-			UserId int `json:"userid"`
+			UserId int `json:"userid" binding:"required"`
 		}
 
 		err := c.ShouldBindJSON(&User)
 		if err != nil {
-			panic(err)
+			c.JSON(http.StatusBadRequest, gin.H{
+				"status": "failure",
+				"cause": "A field is malformed or non-existent",
+			})
+			return
 		}
 
 		info, err2 := database.GetPersonalInfo(db, User.UserId)
