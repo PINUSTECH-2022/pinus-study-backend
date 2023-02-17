@@ -9,24 +9,13 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type DeleteCommentBody struct {
-	UserId int
-	Token  string
-}
-
-type UpdateCommentBody struct {
-	Content string
-	UserId  int
-	Token   string
-}
-
 func GetCommentById(db *sql.DB) func(c *gin.Context) {
 	return func(c *gin.Context) {
 		id, err := strconv.Atoi(c.Param("id"))
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{
 				"status": "failure",
-				"cause": "Comment id is malformed",
+				"cause":  "Comment id is malformed",
 			})
 			return
 		}
@@ -48,30 +37,37 @@ func DeleteCommentById(db *sql.DB) func(c *gin.Context) {
 		if convErr != nil {
 			c.JSON(http.StatusBadRequest, gin.H{
 				"status": "failure",
-				"cause": "Comment id is malformed",
+				"cause":  "Comment id is malformed",
 			})
 			return
 		}
 
-		var requestBody DeleteCommentBody
-		bodyErr := c.BindJSON(&requestBody)
+		var DeleteCommentBody struct {
+			UserId int `json:"userid" binding:"required"`
+		}
+
+		bodyErr := c.BindJSON(&DeleteCommentBody)
 		if bodyErr != nil {
 			c.JSON(http.StatusBadRequest, gin.H{
 				"status": "failure",
-				"cause": "Request body is malformed",
+				"cause":  "Request body is malformed",
 			})
 			return
 		}
 
-		status := database.DeleteCommentById(db, id, requestBody.UserId,
-			requestBody.Token)
+		err := database.DeleteCommentById(db, id, DeleteCommentBody.UserId)
 
-		if !status {
-			c.JSON(http.StatusNotAcceptable, "fail")
+		if err != nil {
+			c.JSON(http.StatusOK, gin.H{
+				"status": "failure",
+				"cause":  err.Error(),
+			})
 			return
 		}
 
-		c.JSON(http.StatusOK, "nice")
+		c.JSON(http.StatusOK, gin.H{
+			"status": "success",
+		})
 	}
 }
 
@@ -81,29 +77,37 @@ func UpdateCommentById(db *sql.DB) func(c *gin.Context) {
 		if convErr != nil {
 			c.JSON(http.StatusBadRequest, gin.H{
 				"status": "failure",
-				"cause": "Comment id is malformed",
+				"cause":  "Comment id is malformed",
 			})
 			return
 		}
 
-		var requestBody UpdateCommentBody
-		bodyErr := c.BindJSON(&requestBody)
+		var UpdateCommentBody struct {
+			UserId  int    `json:"userid" binding:"required"`
+			Content string `json:"content" binding:"required"`
+		}
+
+		bodyErr := c.BindJSON(&UpdateCommentBody)
 		if bodyErr != nil {
 			c.JSON(http.StatusBadRequest, gin.H{
 				"status": "failure",
-				"cause": "Request body is malformed",
+				"cause":  "Request body is malformed",
 			})
 		}
 
-		status := database.UpdateCommentById(db, id, requestBody.Content,
-			requestBody.UserId, requestBody.Token)
+		err := database.UpdateCommentById(db, id, UpdateCommentBody.UserId, UpdateCommentBody.Content)
 
-		if !status {
-			c.JSON(http.StatusNotAcceptable, "fail")
+		if err != nil {
+			c.JSON(http.StatusOK, gin.H{
+				"status": "failure",
+				"cause":  err.Error(),
+			})
 			return
 		}
 
-		c.JSON(http.StatusOK, "nice")
+		c.JSON(http.StatusOK, gin.H{
+			"status": "success",
+		})
 
 	}
 }

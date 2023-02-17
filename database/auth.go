@@ -76,7 +76,7 @@ func SignUp(db *sql.DB, email string, username string, password string) (string,
 	return token, nil
 }
 
-func LogIn(db *sql.DB, nameOrEmail string, password string) (bool, string, error) {
+func LogIn(db *sql.DB, nameOrEmail string, password string) (bool, int, string, error) {
 
 	var (
 		encryptedPassword string
@@ -96,7 +96,7 @@ func LogIn(db *sql.DB, nameOrEmail string, password string) (bool, string, error
 
 	success := doPasswordsMatch(encryptedPassword, password, salt)
 	if !success {
-		return success, "", nil
+		return success, -1, "", nil
 	}
 
 	token, err3 := token.GenerateToken(uid)
@@ -114,7 +114,7 @@ func LogIn(db *sql.DB, nameOrEmail string, password string) (bool, string, error
 		panic(err)
 	}
 
-	return success, token, nil
+	return success, userid, token, nil
 }
 
 func storeUserIdAndJWT(db *sql.DB, userid int, token string) error {
