@@ -103,3 +103,45 @@ func PostComment(db *sql.DB) func(c *gin.Context) {
 		})
 	}
 }
+
+func DeleteThreadById (db *sql.DB) func(c *gin.Context) {
+	return func(c *gin.Context) {
+		threadId, err := strconv.Atoi(c.Param("threadid"))
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"status": "failure",
+				"cause": "Thread id is malformed",
+			})
+			return
+		}
+
+		var userData struct {
+			Token string `json:"token" binding:"required"`
+			UserId int `json:"userid" binding:"required"`
+		}
+
+		err = c.ShouldBindJSON(&userData)
+
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"status": "failure",
+				"cause": "JSON body is malformed",
+			})
+			return
+		}
+
+		err = database.DeleteThread(db, threadId, userData.Token, userData.UserId)
+
+		if err != nil {
+			c.JSON(http.StatusOK, gin.H{
+				"status": "failure",
+				"cause": err.Error(),
+			})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{
+			"status": "success",
+		})
+	}
+}
