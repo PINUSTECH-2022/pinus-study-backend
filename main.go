@@ -41,7 +41,7 @@ func main() {
 	r.PUT("/comment/:id", middlewares.JwtAuthMiddleware(), router.UpdateCommentById(db))
 
 	r.GET("/thread/:threadid", router.GetThreadById(db))
-	r.PUT("/thread/:threadid", middlewares.JwtAuthMiddleware(), router.EditThreadById(db))
+	r.PUT("/thread/:threadid", router.EditThreadById(db))
 	r.POST("/thread/:threadid", middlewares.JwtAuthMiddleware(), router.PostComment(db))
 	r.DELETE("/thread/:threadid", router.DeleteThreadById(db));
 

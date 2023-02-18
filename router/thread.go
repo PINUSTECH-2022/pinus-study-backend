@@ -36,8 +36,12 @@ func EditThreadById(db *sql.DB) func(c *gin.Context) {
 			Title   *string `json:"title"`
 			Content *string `json:"content"`
 			Tags    []int  `json:"tags"`
+			UserId int 	`json:"userId"`
+			Token string `json:"token"`
 		}
+
 		err = c.ShouldBindJSON(&EditedThread)
+
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{
 				"status": "failure",
@@ -46,7 +50,8 @@ func EditThreadById(db *sql.DB) func(c *gin.Context) {
 			return
 		}
 
-		err2 := database.EditThreadById(db, EditedThread.Title, EditedThread.Content, EditedThread.Tags, threadid)
+		err2 := database.EditThreadById(db, EditedThread.Title, EditedThread.Content, 
+			EditedThread.Tags, threadid, EditedThread.UserId, EditedThread.Token)
 		if err2 != nil {
 			c.JSON(http.StatusOK, gin.H{
 				"status": "failure",

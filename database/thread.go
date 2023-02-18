@@ -234,13 +234,21 @@ func getTags(db *sql.DB, id int) []int {
 	return tags
 }
 
-func EditThreadById(db *sql.DB, title *string, content *string, tags []int, threadid int) error {
+func EditThreadById(db *sql.DB, title *string, content *string, 
+	tags []int, threadid int, userId int, token string) error {
 
+	err := checkToken(db, userId, token)
+	
+	if (err != nil) {
+		return err
+	}
+	
 	tx, err := db.Begin()
 	if err != nil {
 		return errors.New("Unable to begin database transaction")
 	}
 	defer tx.Rollback()
+
 
 	if title != nil {
 		_, err := tx.Exec("UPDATE Threads SET title = $1 WHERE id = $2", title, threadid)
@@ -307,8 +315,7 @@ func DeleteThread(db * sql.DB, threadId int, token string, userId int) error {
 	rows, err := tx.Query(deleteStatement, threadId, userId, token)
 
 	if err != nil {
-		return err
-		// return errors.New("Unable to delete thread")
+		return errors.New("Unable to delete thread")
 	}
 
 	//Check if any threads is deleted. throw exception 
