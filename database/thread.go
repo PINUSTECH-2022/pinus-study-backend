@@ -18,6 +18,7 @@ type Thread struct {
 	ModuleId      string
 	LikesCount    int
 	DislikesCount int
+	IsDeleted bool
 	Comments      []int
 	Tags          []int
 }
@@ -32,7 +33,7 @@ func GetThreadById(db *sql.DB, threadid string) Thread {
 	var thread Thread
 
 	for rows.Next() {
-		err := rows.Scan(&thread.Id, &thread.Title, &thread.Content, &thread.ModuleId, &thread.AuthorId, &thread.Timestamp)
+		err := rows.Scan(&thread.Id, &thread.Title, &thread.Content, &thread.ModuleId, &thread.AuthorId, &thread.Timestamp, &thread.IsDeleted)
 		if err != nil {
 			panic(err)
 		}
@@ -58,6 +59,7 @@ func GetThreadById(db *sql.DB, threadid string) Thread {
 	if rows.Err() != nil {
 		panic(err)
 	}
+
 
 	thread.LikesCount = getLikesFromThreadId(db, thread.Id, true)
 	thread.DislikesCount = getLikesFromThreadId(db, thread.Id, false)
@@ -234,13 +236,21 @@ func getTags(db *sql.DB, id int) []int {
 	return tags
 }
 
-func EditThreadById(db *sql.DB, title *string, content *string, tags []int, threadid int) error {
+func EditThreadById(db *sql.DB, title *string, content *string, 
+	tags []int, threadid int, userId int, token string) error {
 
+	err := checkToken(db, userId, token)
+	
+	if (err != nil) {
+		return err
+	}
+	
 	tx, err := db.Begin()
 	if err != nil {
 		return errors.New("Unable to begin database transaction")
 	}
 	defer tx.Rollback()
+
 
 	if title != nil {
 		_, err := tx.Exec("UPDATE Threads SET title = $1 WHERE id = $2", title, threadid)
@@ -269,6 +279,76 @@ func EditThreadById(db *sql.DB, title *string, content *string, tags []int, thre
 			}
 		}
 	}
+
+	err = tx.Commit()
+	if err != nil {
+		return errors.New("Unable to commit transaction")
+	}
+
+	return nil
+}
+
+func DeleteThread(db * sql.DB, threadId int, token string, userId int) error {
+	tx, err := db.Begin()
+	if err != nil {
+		return errors.New("Unable to begin database transaction")
+	}
+	defer tx.Rollback()
+
+	err = checkToken(db, userId, token)
+
+	if err != nil {
+		return err
+	}
+
+	deleteStatement := `
+	UPDATE threads
+	SET is_deleted = true
+	WHERE id = $1
+	AND authorid = $2
+	AND EXISTS (
+		SELECT token
+		FROM tokens
+		WHERE userid = $2 AND token = $3
+	)
+	RETURNING id
+	`
+
+	rows, err := tx.Query(deleteStatement, threadId, userId, token)
+
+	if err != nil {
+		return errors.New("Unable to delete thread")
+	}
+
+	//Check if any threads is deleted. throw exception 
+	//if none is effected.
+	isThreadFound := false
+
+	for rows.Next() {
+		isThreadFound = true
+		break
+	}
+
+	if !isThreadFound {
+		return errors.New("Thread Not Found")
+	}
+
+	// deleteTagsStatement := `
+	// DELETE FROM thread_tags
+	// WHERE threadid = $1
+	// AND EXISTS (
+	// 	SELECT id
+	// 	FROM threads
+	// 	WHERE id = $1
+	// 	AND is_deleted = true
+	// )
+	// `
+	// _,  err = tx.Exec(deleteTagsStatement, threadId)
+
+	// if err != nil {
+	// 	return err
+	// 	// return errors.New("Unable to delete thread")
+	// }
 
 	err = tx.Commit()
 	if err != nil {

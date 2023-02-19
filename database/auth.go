@@ -5,6 +5,7 @@ import (
 	"crypto/sha512"
 	"database/sql"
 	"encoding/hex"
+	"errors"
 	"example/web-service-gin/token"
 
 	_ "github.com/lib/pq"
@@ -115,6 +116,33 @@ func LogIn(db *sql.DB, nameOrEmail string, password string) (bool, int, string, 
 	}
 
 	return success, userid, token, nil
+}
+
+func checkToken(db *sql.DB, userId int, token string) error {
+	sql_statement := `
+	SELECT token
+	FROM tokens
+	WHERE userid = $1 AND token = $2
+	`
+
+	rows, err := db.Query(sql_statement, userId, token)
+
+	if (err != nil) {
+		return errors.New("Unauthorized")
+	}
+
+	isUserFound := false
+
+	for rows.Next() {
+		isUserFound = true
+		break
+	}
+
+	if !isUserFound {
+		return errors.New("Unauthorized")
+	}
+
+	return nil
 }
 
 func storeUserIdAndJWT(db *sql.DB, userid int, token string) error {
