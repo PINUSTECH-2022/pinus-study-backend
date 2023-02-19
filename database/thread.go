@@ -18,6 +18,7 @@ type Thread struct {
 	ModuleId      string
 	LikesCount    int
 	DislikesCount int
+	IsDeleted bool
 	Comments      []int
 	Tags          []int
 }
@@ -32,7 +33,7 @@ func GetThreadById(db *sql.DB, threadid string) Thread {
 	var thread Thread
 
 	for rows.Next() {
-		err := rows.Scan(&thread.Id, &thread.Title, &thread.Content, &thread.ModuleId, &thread.AuthorId, &thread.Timestamp)
+		err := rows.Scan(&thread.Id, &thread.Title, &thread.Content, &thread.ModuleId, &thread.AuthorId, &thread.Timestamp, &thread.IsDeleted)
 		if err != nil {
 			panic(err)
 		}
@@ -58,6 +59,7 @@ func GetThreadById(db *sql.DB, threadid string) Thread {
 	if rows.Err() != nil {
 		panic(err)
 	}
+
 
 	thread.LikesCount = getLikesFromThreadId(db, thread.Id, true)
 	thread.DislikesCount = getLikesFromThreadId(db, thread.Id, false)
