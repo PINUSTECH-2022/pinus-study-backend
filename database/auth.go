@@ -58,7 +58,7 @@ func doPasswordsMatch(hashedPassword, currPassword string, salt []byte) bool {
 	return hashedPassword == currPasswordHash
 }
 
-func SignUp(db *sql.DB, email string, username string, password string) (string, error) {
+func SignUp(db *sql.DB, email string, username string, password string) (int, string, error) {
 	salt := generateRandomSalt()
 	saltString := hex.EncodeToString(salt)
 	encryptedPassword := hashPassword(password, salt)
@@ -66,15 +66,15 @@ func SignUp(db *sql.DB, email string, username string, password string) (string,
 	nexId := getUserId(db)
 	_, err := db.Exec("INSERT INTO Users (id, email, username, password, salt) VALUES ($1, $2, $3, $4, $5)", nexId, email, username, encryptedPassword, saltString)
 	if err != nil {
-		return "", err
+		return -1, "", err
 	}
 
 	token, err2 := token.GenerateToken(nexId)
 	if err2 != nil {
-		return "", err2
+		return -1, "", err2
 	}
 
-	return token, nil
+	return nexId, token, nil
 }
 
 func LogIn(db *sql.DB, nameOrEmail string, password string) (bool, int, string, error) {

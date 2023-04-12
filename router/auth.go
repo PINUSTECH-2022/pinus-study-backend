@@ -48,7 +48,7 @@ func SignUp(db *sql.DB) func(c *gin.Context) {
 			return
 		}
 
-		token, err2 := database.SignUp(db, User.Email, User.Username, User.Password)
+		userId, token, err2 := database.SignUp(db, User.Email, User.Username, User.Password)
 		if err2 != nil {
 			c.JSON(http.StatusOK, gin.H{
 				"status": "failure",
@@ -60,6 +60,7 @@ func SignUp(db *sql.DB) func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
 			"status": "success",
 			"token":  token,
+			"userid": userId,
 		})
 	}
 }
