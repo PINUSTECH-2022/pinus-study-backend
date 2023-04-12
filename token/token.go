@@ -12,9 +12,7 @@ import (
 )
 
 func GenerateToken(user_id int) (string, error) {
-
 	token_lifespan, err := strconv.Atoi(os.Getenv("TOKEN_HOUR_LIFESPAN"))
-
 	if err != nil {
 		return "", err
 	}
@@ -56,7 +54,6 @@ func ExtractToken(c *gin.Context) string {
 }
 
 func ExtractTokenID(c *gin.Context) (uint, error) {
-
 	tokenString := ExtractToken(c)
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {

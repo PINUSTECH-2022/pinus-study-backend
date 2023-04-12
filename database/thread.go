@@ -3,6 +3,8 @@ package database
 import (
 	"database/sql"
 	"errors"
+	"fmt"
+	"strconv"
 	"time"
 
 	_ "github.com/lib/pq"
@@ -23,25 +25,31 @@ type Thread struct {
 }
 
 func GetThreadById(db *sql.DB, threadid string) Thread {
-	rows, err := db.Query("SELECT * FROM Threads WHERE id = $1", threadid)
+	fmt.Println("GetThreadById")
+	fmt.Println(threadid)
+	threadidInt, err := strconv.Atoi(threadid)
+	rows, err := db.Query("SELECT id, title, content, moduleid, authorid, timestamp FROM Threads WHERE id = $1 AND is_deleted = 'f'", threadidInt)
+
 	if err != nil {
+		fmt.Println(err.Error())
 		panic(err)
 	}
 	defer rows.Close()
+	fmt.Println("Query done")
 
 	var thread Thread
-
+	fmt.Println("Initial: ", thread)
 	for rows.Next() {
 		err := rows.Scan(&thread.Id, &thread.Title, &thread.Content, &thread.ModuleId, &thread.AuthorId, &thread.Timestamp)
 		if err != nil {
 			panic(err)
 		}
 	}
-
+	fmt.Println(thread)
 	if rows.Err() != nil {
 		panic(err)
 	}
-
+	fmt.Println("Get username")
 	rows, err = db.Query("SELECT username FROM Users WHERE id = $1", thread.AuthorId)
 	if err != nil {
 		panic(err)
@@ -54,16 +62,20 @@ func GetThreadById(db *sql.DB, threadid string) Thread {
 			panic(err)
 		}
 	}
-
+	fmt.Println("HERE")
 	if rows.Err() != nil {
 		panic(err)
 	}
-
+	fmt.Println(thread)
+	fmt.Println("Get LikesCount")
 	thread.LikesCount = getLikesFromThreadId(db, thread.Id, true)
+	fmt.Println("Get DislikesCount")
 	thread.DislikesCount = getLikesFromThreadId(db, thread.Id, false)
+	fmt.Println("Get Comments")
 	thread.Comments = getComments(db, thread.Id)
+	fmt.Println("Get Tags")
 	thread.Tags = getTags(db, thread.Id)
-
+	fmt.Println(thread)
 	return thread
 }
 
