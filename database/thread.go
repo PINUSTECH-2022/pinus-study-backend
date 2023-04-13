@@ -29,7 +29,7 @@ func GetThreadById(db *sql.DB, threadid string) Thread {
 	fmt.Println("GetThreadById")
 	fmt.Println(threadid)
 	threadidInt, err := strconv.Atoi(threadid)
-	rows, err := db.Query("SELECT id, title, content, moduleid, authorid, timestamp FROM Threads WHERE id = $1 AND is_deleted = 'f'", threadidInt)
+	rows, err := db.Query("SELECT id, title, content, moduleid, authorid, timestamp, is_deleted FROM Threads WHERE id = $1", threadidInt)
 
 	if err != nil {
 		fmt.Println(err.Error())
@@ -43,6 +43,7 @@ func GetThreadById(db *sql.DB, threadid string) Thread {
 	for rows.Next() {
 		err := rows.Scan(&thread.Id, &thread.Title, &thread.Content, &thread.ModuleId, &thread.AuthorId, &thread.Timestamp, &thread.IsDeleted)
 		if err != nil {
+			fmt.Println(err.Error())
 			panic(err)
 		}
 	}
