@@ -36,8 +36,12 @@ func EditThreadById(db *sql.DB) func(c *gin.Context) {
 			Title   *string `json:"title"`
 			Content *string `json:"content"`
 			Tags    []int  `json:"tags"`
+			UserId int 	`json:"userId"`
+			Token string `json:"token"`
 		}
+
 		err = c.ShouldBindJSON(&EditedThread)
+
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{
 				"status": "failure",
@@ -46,7 +50,8 @@ func EditThreadById(db *sql.DB) func(c *gin.Context) {
 			return
 		}
 
-		err2 := database.EditThreadById(db, EditedThread.Title, EditedThread.Content, EditedThread.Tags, threadid)
+		err2 := database.EditThreadById(db, EditedThread.Title, EditedThread.Content, 
+			EditedThread.Tags, threadid, EditedThread.UserId, EditedThread.Token)
 		if err2 != nil {
 			c.JSON(http.StatusOK, gin.H{
 				"status": "failure",
@@ -100,6 +105,48 @@ func PostComment(db *sql.DB) func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
 			"status": "success",
 			"commentid": commentId,
+		})
+	}
+}
+
+func DeleteThreadById (db *sql.DB) func(c *gin.Context) {
+	return func(c *gin.Context) {
+		threadId, err := strconv.Atoi(c.Param("threadid"))
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"status": "failure",
+				"cause": "Thread id is malformed",
+			})
+			return
+		}
+
+		var userData struct {
+			Token string `json:"token" binding:"required"`
+			UserId int `json:"userid" binding:"required"`
+		}
+
+		err = c.ShouldBindJSON(&userData)
+
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"status": "failure",
+				"cause": "JSON body is malformed",
+			})
+			return
+		}
+
+		err = database.DeleteThread(db, threadId, userData.Token, userData.UserId)
+
+		if err != nil {
+			c.JSON(http.StatusOK, gin.H{
+				"status": "failure",
+				"cause": err.Error(),
+			})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{
+			"status": "success",
 		})
 	}
 }

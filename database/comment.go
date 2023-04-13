@@ -2,6 +2,7 @@ package database
 
 import (
 	"database/sql"
+	"errors"
 
 	_ "github.com/lib/pq"
 )
@@ -77,11 +78,9 @@ func getNumberOfCommentsByUser(db *sql.DB, userid int) int {
 	return count
 }
 
-// return true if it runs correctly
-func DeleteCommentById(db *sql.DB, commentId int, userId int,
-	token string) bool {
-	if !isAuthorized(db, commentId, userId, token) {
-		return false
+func DeleteCommentById(db *sql.DB, commentId int, userId int) error {
+	if !isAuthorized(db, commentId, userId) {
+		return errors.New("Not authorized")
 	}
 
 	sql_statement := `
@@ -91,18 +90,16 @@ func DeleteCommentById(db *sql.DB, commentId int, userId int,
 	`
 	_, err := db.Exec(sql_statement, commentId)
 
-	return err == nil
+	return err
 }
 
-// return true if it runs correctly
-func UpdateCommentById(db *sql.DB, commentId int, content string,
-	userId int, token string) bool {
-	if !isAuthorized(db, commentId, userId, token) {
-		return false
+func UpdateCommentById(db *sql.DB, commentId int, userId int, content string) error {
+	if !isAuthorized(db, commentId, userId) {
+		return errors.New("Not authorized")
 	}
 
 	if content == "" {
-		return false
+		return errors.New("Comment must not be empty")
 	}
 
 	sql_statement := `
@@ -111,11 +108,8 @@ func UpdateCommentById(db *sql.DB, commentId int, content string,
 	WHERE id = $1
 		`
 	_, err := db.Exec(sql_statement, commentId, content)
-	if err != nil {
-		panic(err)
-	}
 
-	return err == nil
+	return err
 }
 
 // if status true, return number of likes
@@ -202,15 +196,15 @@ func getChildrensFromCommentId(db *sql.DB, id int) []int {
 	return childs
 }
 
-// might want to change it later
-func isAuthorized(db *sql.DB, commentId int, userId int, token string) bool {
+func isAuthorized(db *sql.DB, commentId int, userId int) bool {
 	var status bool
 	sql_statement := `
-	SELECT 1
-	FROM Tokens t JOIN Comments c ON t.userid = c.authorid
-	WHERE c.id = $1 AND c.authorid = $2 AND t.token = $3
+	SELECT 1 FROM
+	Comments c JOIN Users u
+	ON c.authorid = u.id
+	WHERE c.id = $1 AND u.id = $2
 	`
-	rows, err := db.Query(sql_statement, commentId, userId, token)
+	rows, err := db.Query(sql_statement, commentId, userId)
 	if err != nil {
 		panic(err)
 	}
