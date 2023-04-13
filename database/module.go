@@ -3,6 +3,7 @@ package database
 import (
 	"database/sql"
 	"errors"
+	"fmt"
 	"strconv"
 	"time"
 
@@ -79,6 +80,7 @@ func getSubscriberCount(db *sql.DB, moduleid string) int {
 }
 
 func GetModuleByModuleId(db *sql.DB, moduleid string) Module {
+	fmt.Println("a")
 	rows, err := db.Query("SELECT * FROM Modules WHERE id = $1", moduleid)
 	if err != nil {
 		panic(err)
@@ -86,7 +88,7 @@ func GetModuleByModuleId(db *sql.DB, moduleid string) Module {
 	defer rows.Close()
 
 	var mod Module
-
+	fmt.Println("b")
 	for rows.Next() {
 		err := rows.Scan(&mod.Id, &mod.Name, &mod.Desc)
 		mod.SubscriberCount = getSubscriberCount(db, mod.Id)
@@ -94,26 +96,28 @@ func GetModuleByModuleId(db *sql.DB, moduleid string) Module {
 			panic(err)
 		}
 	}
-
+	fmt.Println(mod)
 	if rows.Err() != nil {
 		panic(err)
 	}
-
+	fmt.Println(mod.Id)
 	thread_ids, err := db.Query("SELECT id FROM Threads WHERE moduleid = $1", mod.Id)
 	if err != nil {
 		panic(err)
 	}
 	defer thread_ids.Close()
-
+	fmt.Println("TEST")
 	for thread_ids.Next() {
 		var thread_id int
 		err := thread_ids.Scan(&thread_id)
 		if err != nil {
 			panic(err)
 		}
+		fmt.Println(thread_id)
 		mod.Threads = append(mod.Threads, GetThreadById(db, strconv.Itoa(thread_id)))
 	}
 
+	fmt.Println(mod)
 	return mod
 }
 

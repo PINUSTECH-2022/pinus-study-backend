@@ -3,6 +3,8 @@ package database
 import (
 	"database/sql"
 	"errors"
+	"fmt"
+	"strconv"
 	"time"
 
 	_ "github.com/lib/pq"
@@ -18,31 +20,38 @@ type Thread struct {
 	ModuleId      string
 	LikesCount    int
 	DislikesCount int
-	IsDeleted bool
+	IsDeleted     bool
 	Comments      []int
 	Tags          []int
 }
 
 func GetThreadById(db *sql.DB, threadid string) Thread {
-	rows, err := db.Query("SELECT * FROM Threads WHERE id = $1", threadid)
+	fmt.Println("GetThreadById")
+	fmt.Println(threadid)
+	threadidInt, err := strconv.Atoi(threadid)
+	rows, err := db.Query("SELECT id, title, content, moduleid, authorid, timestamp, is_deleted FROM Threads WHERE id = $1", threadidInt)
+
 	if err != nil {
+		fmt.Println(err.Error())
 		panic(err)
 	}
 	defer rows.Close()
+	fmt.Println("Query done")
 
 	var thread Thread
-
+	fmt.Println("Initial: ", thread)
 	for rows.Next() {
 		err := rows.Scan(&thread.Id, &thread.Title, &thread.Content, &thread.ModuleId, &thread.AuthorId, &thread.Timestamp, &thread.IsDeleted)
 		if err != nil {
+			fmt.Println(err.Error())
 			panic(err)
 		}
 	}
-
+	fmt.Println(thread)
 	if rows.Err() != nil {
 		panic(err)
 	}
-
+	fmt.Println("Get username")
 	rows, err = db.Query("SELECT username FROM Users WHERE id = $1", thread.AuthorId)
 	if err != nil {
 		panic(err)
@@ -55,17 +64,19 @@ func GetThreadById(db *sql.DB, threadid string) Thread {
 			panic(err)
 		}
 	}
-
+	fmt.Println("HERE")
 	if rows.Err() != nil {
 		panic(err)
 	}
 
-
 	thread.LikesCount = getLikesFromThreadId(db, thread.Id, true)
+	fmt.Println("Get DislikesCount")
 	thread.DislikesCount = getLikesFromThreadId(db, thread.Id, false)
+	fmt.Println("Get Comments")
 	thread.Comments = getComments(db, thread.Id)
+	fmt.Println("Get Tags")
 	thread.Tags = getTags(db, thread.Id)
-
+	fmt.Println(thread)
 	return thread
 }
 
@@ -236,21 +247,20 @@ func getTags(db *sql.DB, id int) []int {
 	return tags
 }
 
-func EditThreadById(db *sql.DB, title *string, content *string, 
+func EditThreadById(db *sql.DB, title *string, content *string,
 	tags []int, threadid int, userId int, token string) error {
 
 	err := checkToken(db, userId, token)
-	
-	if (err != nil) {
+
+	if err != nil {
 		return err
 	}
-	
+
 	tx, err := db.Begin()
 	if err != nil {
 		return errors.New("Unable to begin database transaction")
 	}
 	defer tx.Rollback()
-
 
 	if title != nil {
 		_, err := tx.Exec("UPDATE Threads SET title = $1 WHERE id = $2", title, threadid)
@@ -288,7 +298,7 @@ func EditThreadById(db *sql.DB, title *string, content *string,
 	return nil
 }
 
-func DeleteThread(db * sql.DB, threadId int, token string, userId int) error {
+func DeleteThread(db *sql.DB, threadId int, token string, userId int) error {
 	tx, err := db.Begin()
 	if err != nil {
 		return errors.New("Unable to begin database transaction")
@@ -320,7 +330,7 @@ func DeleteThread(db * sql.DB, threadId int, token string, userId int) error {
 		return errors.New("Unable to delete thread")
 	}
 
-	//Check if any threads is deleted. throw exception 
+	//Check if any threads is deleted. throw exception
 	//if none is effected.
 	isThreadFound := false
 
