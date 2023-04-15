@@ -33,8 +33,8 @@ func GetThreadById(db *sql.DB, threadid string) Thread {
 
 	query := fmt.Sprintf(`SELECT T.id, T.title, T.content, T.moduleid, T.authorid, T.timestamp, T.is_deleted, 
 	(SELECT COUNT(*) FROM Likes_threads AS LT WHERE LT.threadid = T.id AND LT.state = true) AS likes_count, 
-	(SELECT COUNT(*) FROM Likes_threads AS LT WHERE LT.threadid = T.id AND LT.state = false) AS dislikes_count, U.username 
-	FROM Threads AS T, Users AS U WHERE T.id = %d AND T.authorid = U.id`,
+	(SELECT COUNT(*) FROM Likes_threads AS LT WHERE LT.threadid = T.id AND LT.state = false) AS dislikes_count, U.username, C.id 
+	FROM Threads AS T, Users AS U, Comments AS C WHERE T.id = %d AND T.authorid = U.id AND C.threadid = T.id;`,
 		threadidInt)
 
 	rows, err := db.Query(query)
@@ -47,10 +47,12 @@ func GetThreadById(db *sql.DB, threadid string) Thread {
 	var thread Thread
 	fmt.Println("b")
 	for rows.Next() {
-		err := rows.Scan(&thread.Id, &thread.Title, &thread.Content, &thread.ModuleId, &thread.AuthorId, &thread.Timestamp, &thread.IsDeleted, &thread.LikesCount, &thread.DislikesCount, &thread.Username)
+		var commentId int
+		err := rows.Scan(&thread.Id, &thread.Title, &thread.Content, &thread.ModuleId, &thread.AuthorId, &thread.Timestamp, &thread.IsDeleted, &thread.LikesCount, &thread.DislikesCount, &thread.Username, &commentId)
 		if err != nil {
 			panic(err)
 		}
+		thread.Comments = append(thread.Comments, commentId)
 	}
 	return thread
 
