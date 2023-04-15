@@ -63,18 +63,13 @@ func GetUserInfoByID(db *sql.DB, userid int) (UserInfo, error) {
 
 	sql_statement3 := `
 	SELECT t.id, t.title, t.content, t.moduleid, t.authorid, t.timestamp, t.is_deleted,
-	COUNT(lt1.userid) AS likes_count, COUNT(lt2.userid) AS dislikes_count, 
-	(CASE WHEN c.id IS NULL THEN -1 ELSE c.id END) AS comment_id, 
-	(CASE WHEN tt.tagId IS NULL THEN -1 ELSE tt.tagId END) AS tag_id
+	COUNT(lt1.userid) AS likes_count, COUNT(lt2.userid) AS dislikes_count
 	FROM USERS u
 	JOIN Threads t ON u.id = t.authorid
-	LEFT JOIN Comments c ON t.id = c.authorid
-	LEFT JOIN Likes_Threads lt1 ON t.id = lt1.threadid AND lt1.state = FALSE
+	LEFT JOIN Likes_Threads lt1 ON t.id = lt1.threadid AND lt1.state = TRUE
 	LEFT JOIN Likes_Threads lt2 ON t.id = lt2.threadid AND lt2.state = FALSE
-	LEFT JOIN Thread_Tags tt ON t.id = tt.threadid
 	WHERE u.id = $1
-	GROUP BY t.id, t.title, t.content, t.moduleid, t.authorid, t.timestamp, t.is_deleted,
-	c.id, tt.tagId
+	GROUP BY t.id, t.title, t.content, t.moduleid, t.authorid, t.timestamp, t.is_deleted
 	ORDER BY t.timestamp, t.id DESC
 	`
 
@@ -84,46 +79,21 @@ func GetUserInfoByID(db *sql.DB, userid int) (UserInfo, error) {
 	}
 	defer rows3.Close()
 
-	var prev_thread_id = -1
 	var thread_count = 0
-	comment_list := make(map[int]int)
-	tag_list := make(map[int]int)
 
 	for rows3.Next() {
 		var thread Thread
-		var comment_id int
-		var tag_id int
 
 		rows3.Scan(&thread.Id, &thread.Title, &thread.Content, &thread.ModuleId, &thread.AuthorId, &thread.Timestamp,
-			&thread.IsDeleted, &thread.LikesCount, &thread.DislikesCount, &comment_id, &tag_id)
-		thread.Comments = []int{}
-		thread.Tags = []int{}
+			&thread.IsDeleted, &thread.LikesCount, &thread.DislikesCount)
 
-		if prev_thread_id != thread.Id {
-			thread_count += 1
-			prev_thread_id = thread.Id
-			userInfo.NumberOfQuestionsAsked += 1
-			userInfo.NumberOfLikesReceived += thread.LikesCount
+		thread_count += 1
+		userInfo.NumberOfQuestionsAsked += 1
+		userInfo.NumberOfLikesReceived += thread.LikesCount
 
-			if thread_count <= 5 {
-				// reset the map
-				comment_list = make(map[int]int)
-				tag_list = make(map[int]int)
-
-				userInfo.RecentThreads = append(userInfo.RecentThreads, thread)
-			}
-		}
+		// recent threads
 		if thread_count <= 5 {
-			if comment_id != -1 && comment_list[comment_id] == 0 {
-				userInfo.RecentThreads[len(userInfo.RecentThreads)-1].Comments = append(
-					userInfo.RecentThreads[len(userInfo.RecentThreads)-1].Comments, comment_id)
-				comment_list[comment_id] = 1
-			}
-			if tag_id != -1 && tag_list[tag_id] == 0 {
-				userInfo.RecentThreads[len(userInfo.RecentThreads)-1].Tags = append(
-					userInfo.RecentThreads[len(userInfo.RecentThreads)-1].Tags, tag_id)
-				tag_list[tag_id] = 1
-			}
+			userInfo.RecentThreads = append(userInfo.RecentThreads, thread)
 		}
 	}
 
