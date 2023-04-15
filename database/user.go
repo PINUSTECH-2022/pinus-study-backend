@@ -12,23 +12,90 @@ type UserInfo struct {
 	NumberOfQuestionsAsked int
 	NumberOfLikesReceived  int
 	RecentThreads          []Thread
-	Modules              []string
+	Modules                []string
 }
 
 func GetUserInfoByID(db *sql.DB, userid int) (UserInfo, error) {
 	var userInfo UserInfo
+	userInfo.Modules = []string{}
+	userInfo.RecentThreads = []Thread{}
 
-	username, err := getUsername(db, userid)
+	sql_statement1 := `
+	SELECT u.username, (CASE WHEN s.moduleid IS NULL THEN '' ELSE s.moduleid END) AS module_code
+	FROM Users u
+	LEFT JOIN Subscribes s ON u.id = s.userid
+	WHERE u.id = $1
+	`
+	rows1, err1 := db.Query(sql_statement1, userid)
+	if err1 != nil {
+		panic(err1)
+	}
+	defer rows1.Close()
 
-	if err != nil {
-		return userInfo, err
+	for rows1.Next() {
+		var module string
+		rows1.Scan(&userInfo.Username, &module)
+		if module != "" {
+			userInfo.Modules = append(userInfo.Modules, module)
+		}
 	}
 
-	userInfo.Username = username
-	userInfo.NumberOfQuestionsAsked = getNumberOfThreadsByUser(db, userid) + getNumberOfCommentsByUser(db, userid)
-	userInfo.NumberOfLikesReceived = getNumberOfLikesToUserThreads(db, userid) + getNumberOfLikesToUserComments(db, userid)
-	userInfo.RecentThreads = getRecentThreadsByUser(db, userid)
-	userInfo.Modules = getModulesSubscribedByUser(db, userid)
+	sql_statement2 := `
+	SELECT COUNT(lc.userid)
+	FROM Users u
+	JOIN Comments c ON u.id = c.authorid
+	LEFT JOIN Likes_Comments lc ON c.id = lc.commentid AND lc.state = TRUE
+	WHERE u.id = $1
+	GROUP BY c.id
+	`
+	rows2, err2 := db.Query(sql_statement2, userid)
+	if err2 != nil {
+		panic(err2)
+	}
+	defer rows2.Close()
+
+	for rows2.Next() {
+		var comment_like_count int
+		rows1.Scan(&comment_like_count)
+		userInfo.NumberOfQuestionsAsked += 1
+		userInfo.NumberOfLikesReceived += comment_like_count
+	}
+
+	sql_statement3 := `
+	SELECT t.id, t.title, t.content, t.moduleid, t.authorid, t.timestamp, t.is_deleted,
+	COUNT(lt1.userid) AS likes_count, COUNT(lt2.userid) AS dislikes_count
+	FROM USERS u
+	JOIN Threads t ON u.id = t.authorid
+	LEFT JOIN Likes_Threads lt1 ON t.id = lt1.threadid AND lt1.state = TRUE
+	LEFT JOIN Likes_Threads lt2 ON t.id = lt2.threadid AND lt2.state = FALSE
+	WHERE u.id = $1
+	GROUP BY t.id, t.title, t.content, t.moduleid, t.authorid, t.timestamp, t.is_deleted
+	ORDER BY t.timestamp, t.id DESC
+	`
+
+	rows3, err3 := db.Query(sql_statement3, userid)
+	if err3 != nil {
+		panic(err3)
+	}
+	defer rows3.Close()
+
+	var thread_count = 0
+
+	for rows3.Next() {
+		var thread Thread
+
+		rows3.Scan(&thread.Id, &thread.Title, &thread.Content, &thread.ModuleId, &thread.AuthorId, &thread.Timestamp,
+			&thread.IsDeleted, &thread.LikesCount, &thread.DislikesCount)
+
+		thread_count += 1
+		userInfo.NumberOfQuestionsAsked += 1
+		userInfo.NumberOfLikesReceived += thread.LikesCount
+
+		// recent threads
+		if thread_count <= 5 {
+			userInfo.RecentThreads = append(userInfo.RecentThreads, thread)
+		}
+	}
 
 	return userInfo, nil
 }
