@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
-	"sync"
 	"time"
 
 	_ "github.com/lib/pq"
@@ -27,68 +26,89 @@ type Thread struct {
 }
 
 func GetThreadById(db *sql.DB, threadid string) Thread {
-
 	threadidInt, err := strconv.Atoi(threadid)
-	if (err != nil) {
+	if err != nil {
 		panic(err)
 	}
 
-	var wg sync.WaitGroup
+	query := fmt.Sprintf(`SELECT T.id, T.title, T.content, T.moduleid, T.authorid, T.timestamp, T.is_deleted, 
+	(SELECT COUNT(*) FROM Likes_threads AS LT WHERE LT.threadid = T.id AND LT.state = true) AS likes_count, 
+	(SELECT COUNT(*) FROM Likes_threads AS LT WHERE LT.threadid = T.id AND LT.state = false) AS dislikes_count, U.username 
+	FROM Threads AS T, Users AS U WHERE T.id = %d AND T.authorid = U.id`,
+		threadidInt)
 
-	thread_c := make(chan Thread, 1)
-	likeCount_c := make(chan int, 1)
-	dislikeCount_c := make(chan int, 1)
-	comments_c := make(chan []int, 1)
-	tags_c := make(chan []int, 1)
+	rows, err := db.Query(query)
+	if err != nil {
+		fmt.Println(err.Error())
+		panic(err)
+	}
+	defer rows.Close()
 
-	wg.Add(5)
-	go func(db *sql.DB, threadid int, c chan Thread) {
-		defer wg.Done()
-		defer close(c)
-		var thread Thread
-
-		err = db.QueryRow(
-		`SELECT t.id, t.title, t.content, t.moduleid, 
-		t.authorid, t.timestamp, t.is_deleted, u.username 
-		FROM Threads as t, Users as u 
-		WHERE u.id = t.id AND t.id = $1`, 
-		threadidInt).Scan(&thread.Id, &thread.Title, &thread.Content, &thread.ModuleId, &thread.AuthorId, &thread.Timestamp, &thread.IsDeleted, &thread.Username)
-	
+	var thread Thread
+	fmt.Println("b")
+	for rows.Next() {
+		err := rows.Scan(&thread.Id, &thread.Title, &thread.Content, &thread.ModuleId, &thread.AuthorId, &thread.Timestamp, &thread.IsDeleted, &thread.LikesCount, &thread.DislikesCount, &thread.Username)
 		if err != nil {
 			panic(err)
 		}
-
-		c <- thread
-	} (db, threadidInt, thread_c)
-	go func(db *sql.DB, threadid int, c chan int) {
-		defer wg.Done()
-		defer close(c)
-		c <- getLikesFromThreadId(db, threadid, true)
-	} (db, threadidInt, likeCount_c)
-	go func(db *sql.DB, threadid int, c chan int) {
-		defer wg.Done()
-		defer close(c)
-		c <- getLikesFromThreadId(db, threadid, false)
-	} (db, threadidInt, dislikeCount_c)
-	go func(db *sql.DB, threadid int, c chan []int) {
-		defer wg.Done()
-		defer close(c)
-		c <- getComments(db, threadid)
-	} (db, threadidInt, comments_c)
-	go func(db *sql.DB, threadid int, c chan []int) {
-		defer wg.Done()
-		defer close(c)
-		c <- getTags(db, threadid)
-	} (db, threadidInt, tags_c)
-	
-	wg.Wait()
-
-	thread := <-thread_c
-	thread.LikesCount = <-likeCount_c
-	thread.DislikesCount = <-dislikeCount_c
-	thread.Comments = <-comments_c
-	thread.Tags = <-tags_c
+	}
 	return thread
+
+	// var wg sync.WaitGroup
+
+	// thread_c := make(chan Thread, 1)
+	// likeCount_c := make(chan int, 1)
+	// dislikeCount_c := make(chan int, 1)
+	// comments_c := make(chan []int, 1)
+	// tags_c := make(chan []int, 1)
+
+	// wg.Add(5)
+	// go func(db *sql.DB, threadid int, c chan Thread) {
+	// 	defer wg.Done()
+	// 	defer close(c)
+	// 	var thread Thread
+
+	// 	err = db.QueryRow(
+	// 	`SELECT t.id, t.title, t.content, t.moduleid,
+	// 	t.authorid, t.timestamp, t.is_deleted, u.username
+	// 	FROM Threads as t, Users as u
+	// 	WHERE u.id = t.id AND t.id = $1`,
+	// 	threadidInt).Scan(&thread.Id, &thread.Title, &thread.Content, &thread.ModuleId, &thread.AuthorId, &thread.Timestamp, &thread.IsDeleted, &thread.Username)
+
+	// 	if err != nil {
+	// 		panic(err)
+	// 	}
+
+	// 	c <- thread
+	// } (db, threadidInt, thread_c)
+	// go func(db *sql.DB, threadid int, c chan int) {
+	// 	defer wg.Done()
+	// 	defer close(c)
+	// 	c <- getLikesFromThreadId(db, threadid, true)
+	// } (db, threadidInt, likeCount_c)
+	// go func(db *sql.DB, threadid int, c chan int) {
+	// 	defer wg.Done()
+	// 	defer close(c)
+	// 	c <- getLikesFromThreadId(db, threadid, false)
+	// } (db, threadidInt, dislikeCount_c)
+	// go func(db *sql.DB, threadid int, c chan []int) {
+	// 	defer wg.Done()
+	// 	defer close(c)
+	// 	c <- getComments(db, threadid)
+	// } (db, threadidInt, comments_c)
+	// go func(db *sql.DB, threadid int, c chan []int) {
+	// 	defer wg.Done()
+	// 	defer close(c)
+	// 	c <- getTags(db, threadid)
+	// } (db, threadidInt, tags_c)
+
+	// wg.Wait()
+
+	// thread := <-thread_c
+	// thread.LikesCount = <-likeCount_c
+	// thread.DislikesCount = <-dislikeCount_c
+	// thread.Comments = <-comments_c
+	// thread.Tags = <-tags_c
 }
 
 // Return past 5 threads posted by user
@@ -145,7 +165,7 @@ func getLikesFromThreadId(db *sql.DB, id int, status bool) int {
 	var count int
 
 	err := db.QueryRow(sql_statement, status, id).Scan(&count)
-	if (err != nil) {
+	if err != nil {
 		panic(err)
 	}
 
@@ -264,22 +284,22 @@ func EditThreadById(db *sql.DB, title *string, content *string,
 			return errors.New("Unable to delete thread tags")
 		}
 
-		if (len(tags) > 0) {
+		if len(tags) > 0 {
 			sql_statement := "INSERT INTO Thread_Tags VALUES "
 			vals := []any{}
 			vals = append(vals, threadid)
 
 			for i, tagId := range tags {
-				sql_statement += fmt.Sprintf("($1, $%d),", i + 2)
+				sql_statement += fmt.Sprintf("($1, $%d),", i+2)
 				vals = append(vals, tagId)
 			}
 
-			_, err = tx.Exec(sql_statement[0: (len(sql_statement) - 1)], vals...)
+			_, err = tx.Exec(sql_statement[0:(len(sql_statement)-1)], vals...)
 			if err != nil {
 				fmt.Println(err)
 				return errors.New("Tags have improper formatting")
 			}
-		}	
+		}
 	}
 
 	err = tx.Commit()
