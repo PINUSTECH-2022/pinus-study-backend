@@ -33,61 +33,38 @@ func GetThreadById(db *sql.DB, threadid string) Thread {
 		panic(err)
 	}
 
+	var thread Thread
 	var wg sync.WaitGroup
 
-	thread_c := make(chan Thread, 1)
-	likeCount_c := make(chan int, 1)
-	dislikeCount_c := make(chan int, 1)
 	comments_c := make(chan []int, 1)
-	tags_c := make(chan []int, 1)
 
-	wg.Add(5)
-	go func(db *sql.DB, threadid int, c chan Thread) {
-		defer wg.Done()
-		defer close(c)
-		var thread Thread
+	err = db.QueryRow(
+	`SELECT t.id, t.title, t.content, t.moduleid, 
+	t.authorid, t.timestamp, t.is_deleted, u.username,
+	COUNT(CASE WHEN lt.state = TRUE THEN 1 END),
+	COUNT(CASE WHEN lt.state = FALSE THEN 1 END)
+	FROM Threads as t, Users as u, Likes_Threads as lt 
+	WHERE u.id = t.id AND t.id = $1 AND lt.threadid = t.id`, 
+	threadidInt).Scan(&thread.Id, &thread.Title, &thread.Content, &thread.ModuleId, 
+		&thread.AuthorId, &thread.Timestamp, &thread.IsDeleted, &thread.Username,
+	&thread.LikesCount, &thread.DislikesCount)
 
-		err = db.QueryRow(
-		`SELECT t.id, t.title, t.content, t.moduleid, 
-		t.authorid, t.timestamp, t.is_deleted, u.username 
-		FROM Threads as t, Users as u 
-		WHERE u.id = t.id AND t.id = $1`, 
-		threadidInt).Scan(&thread.Id, &thread.Title, &thread.Content, &thread.ModuleId, &thread.AuthorId, &thread.Timestamp, &thread.IsDeleted, &thread.Username)
-	
-		if err != nil {
-			panic(err)
-		}
+	if err != nil {
+		panic(err)
+	}
 
-		c <- thread
-	} (db, threadidInt, thread_c)
-	go func(db *sql.DB, threadid int, c chan int) {
-		defer wg.Done()
-		defer close(c)
-		c <- getLikesFromThreadId(db, threadid, true)
-	} (db, threadidInt, likeCount_c)
-	go func(db *sql.DB, threadid int, c chan int) {
-		defer wg.Done()
-		defer close(c)
-		c <- getLikesFromThreadId(db, threadid, false)
-	} (db, threadidInt, dislikeCount_c)
+	wg.Add(1)
 	go func(db *sql.DB, threadid int, c chan []int) {
 		defer wg.Done()
 		defer close(c)
 		c <- getComments(db, threadid)
 	} (db, threadidInt, comments_c)
-	go func(db *sql.DB, threadid int, c chan []int) {
-		defer wg.Done()
-		defer close(c)
-		c <- getTags(db, threadid)
-	} (db, threadidInt, tags_c)
+
+	thread.Tags = getTags(db, thread.Id)
 	
 	wg.Wait()
 
-	thread := <-thread_c
-	thread.LikesCount = <-likeCount_c
-	thread.DislikesCount = <-dislikeCount_c
 	thread.Comments = <-comments_c
-	thread.Tags = <-tags_c
 	return thread
 }
 

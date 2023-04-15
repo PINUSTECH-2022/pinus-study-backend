@@ -31,6 +31,9 @@ func GetDb() *sql.DB {
 	// Increase maximum idle connections to improve latency.
 	db.SetMaxIdleConns(5)
 
+	// Heroku limit, because we paid for nothing.
+	db.SetMaxOpenConns(20)
+
 	// Eagerly starts a connection with db
 	err = db.Ping()
 	if err != nil {
