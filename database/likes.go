@@ -35,6 +35,10 @@ func GetLikeThread(db *sql.DB, threadid int, userid int) (int, error) {
 func SetLikeThread(db *sql.DB, state int, threadid int, userid int) error {
 	ResetLikeThread(db, threadid, userid)
 
+	if state == 0 {
+		return nil
+	}
+
 	var boolState bool
 	if state == 1 {
 		boolState = true
@@ -86,6 +90,11 @@ func GetLikeComment(db *sql.DB, commentid int, userid int) (int, error) {
 
 func SetLikeComment(db *sql.DB, state int, commentid int, userid int) error {
 	ResetLikeComment(db, commentid, userid)
+
+	if state == 0 {
+		return nil
+	}
+
 	var boolState bool
 	if state == 1 {
 		boolState = true
