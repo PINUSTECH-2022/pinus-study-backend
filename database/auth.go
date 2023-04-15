@@ -101,7 +101,7 @@ func LogIn(db *sql.DB, nameOrEmail string, password string) (bool, int, string, 
 
 	token, err3 := token.GenerateToken(uid)
 	if err3 != nil {
-		panic(err)
+		panic(err3)
 	}
 
 	userid, err := getUserIdFromNameOrEmail(db, nameOrEmail)

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"sync"
 	"time"
 
 	_ "github.com/lib/pq"
@@ -26,57 +27,67 @@ type Thread struct {
 }
 
 func GetThreadById(db *sql.DB, threadid string) Thread {
-	fmt.Println("GetThreadById")
-	fmt.Println(threadid)
+
 	threadidInt, err := strconv.Atoi(threadid)
-	rows, err := db.Query("SELECT id, title, content, moduleid, authorid, timestamp, is_deleted FROM Threads WHERE id = $1", threadidInt)
-
-	if err != nil {
-		fmt.Println(err.Error())
+	if (err != nil) {
 		panic(err)
 	}
-	defer rows.Close()
-	fmt.Println("Query done")
 
-	var thread Thread
-	fmt.Println("Initial: ", thread)
-	for rows.Next() {
-		err := rows.Scan(&thread.Id, &thread.Title, &thread.Content, &thread.ModuleId, &thread.AuthorId, &thread.Timestamp, &thread.IsDeleted)
-		if err != nil {
-			fmt.Println(err.Error())
-			panic(err)
-		}
-	}
-	fmt.Println(thread)
-	if rows.Err() != nil {
-		panic(err)
-	}
-	fmt.Println("Get username")
-	rows, err = db.Query("SELECT username FROM Users WHERE id = $1", thread.AuthorId)
-	if err != nil {
-		panic(err)
-	}
-	defer rows.Close()
+	var wg sync.WaitGroup
 
-	for rows.Next() {
-		err := rows.Scan(&thread.Username)
+	thread_c := make(chan Thread, 1)
+	likeCount_c := make(chan int, 1)
+	dislikeCount_c := make(chan int, 1)
+	comments_c := make(chan []int, 1)
+	tags_c := make(chan []int, 1)
+
+	wg.Add(5)
+	go func(db *sql.DB, threadid int, c chan Thread) {
+		defer wg.Done()
+		defer close(c)
+		var thread Thread
+
+		err = db.QueryRow(
+		`SELECT t.id, t.title, t.content, t.moduleid, 
+		t.authorid, t.timestamp, t.is_deleted, u.username 
+		FROM Threads as t, Users as u 
+		WHERE u.id = t.id AND t.id = $1`, 
+		threadidInt).Scan(&thread.Id, &thread.Title, &thread.Content, &thread.ModuleId, &thread.AuthorId, &thread.Timestamp, &thread.IsDeleted, &thread.Username)
+	
 		if err != nil {
 			panic(err)
 		}
-	}
-	fmt.Println("HERE")
-	if rows.Err() != nil {
-		panic(err)
-	}
 
-	thread.LikesCount = getLikesFromThreadId(db, thread.Id, true)
-	fmt.Println("Get DislikesCount")
-	thread.DislikesCount = getLikesFromThreadId(db, thread.Id, false)
-	fmt.Println("Get Comments")
-	thread.Comments = getComments(db, thread.Id)
-	fmt.Println("Get Tags")
-	thread.Tags = getTags(db, thread.Id)
-	fmt.Println(thread)
+		c <- thread
+	} (db, threadidInt, thread_c)
+	go func(db *sql.DB, threadid int, c chan int) {
+		defer wg.Done()
+		defer close(c)
+		c <- getLikesFromThreadId(db, threadid, true)
+	} (db, threadidInt, likeCount_c)
+	go func(db *sql.DB, threadid int, c chan int) {
+		defer wg.Done()
+		defer close(c)
+		c <- getLikesFromThreadId(db, threadid, false)
+	} (db, threadidInt, dislikeCount_c)
+	go func(db *sql.DB, threadid int, c chan []int) {
+		defer wg.Done()
+		defer close(c)
+		c <- getComments(db, threadid)
+	} (db, threadidInt, comments_c)
+	go func(db *sql.DB, threadid int, c chan []int) {
+		defer wg.Done()
+		defer close(c)
+		c <- getTags(db, threadid)
+	} (db, threadidInt, tags_c)
+	
+	wg.Wait()
+
+	thread := <-thread_c
+	thread.LikesCount = <-likeCount_c
+	thread.DislikesCount = <-dislikeCount_c
+	thread.Comments = <-comments_c
+	thread.Tags = <-tags_c
 	return thread
 }
 
@@ -115,21 +126,10 @@ func getNumberOfThreadsByUser(db *sql.DB, userid int) int {
 	FROM Threads t
 	WHERE t.authorid = $1
 	`
-	rows, err := db.Query(sql_statement, userid)
-	if err != nil {
-		panic(err)
-	}
-	defer rows.Close()
 
 	var count int
-	for rows.Next() {
-		err := rows.Scan(&count)
-		if err != nil {
-			panic(err)
-		}
-	}
-
-	if rows.Err() != nil {
+	err := db.QueryRow(sql_statement, userid).Scan(&count)
+	if err != nil {
 		panic(err)
 	}
 
@@ -142,21 +142,10 @@ func getLikesFromThreadId(db *sql.DB, id int, status bool) int {
 	FROM Likes_Threads
 	WHERE state = $1 AND threadid = $2
 	`
-	rows, err := db.Query(sql_statement, status, id)
-	if err != nil {
-		panic(err)
-	}
-	defer rows.Close()
-
 	var count int
-	for rows.Next() {
-		err := rows.Scan(&count)
-		if err != nil {
-			panic(err)
-		}
-	}
 
-	if rows.Err() != nil {
+	err := db.QueryRow(sql_statement, status, id).Scan(&count)
+	if (err != nil) {
 		panic(err)
 	}
 
@@ -250,30 +239,23 @@ func getTags(db *sql.DB, id int) []int {
 func EditThreadById(db *sql.DB, title *string, content *string,
 	tags []int, threadid int, userId int, token string) error {
 
-	err := checkToken(db, userId, token)
-
-	if err != nil {
-		return err
-	}
-
 	tx, err := db.Begin()
 	if err != nil {
 		return errors.New("Unable to begin database transaction")
 	}
 	defer tx.Rollback()
 
-	if title != nil {
-		_, err := tx.Exec("UPDATE Threads SET title = $1 WHERE id = $2", title, threadid)
-		if err != nil {
-			return errors.New("Title has improper formatting")
-		}
-	}
+	// Bad authentication method, but works.
+	var modifiedIns int
+	err = tx.QueryRow(`UPDATE Threads 
+	SET title = COALESCE($1, title), content = COALESCE($2, content) 
+	WHERE id = $3 AND authorid = $4 AND EXISTS (
+		SELECT token
+		FROM tokens
+		WHERE userid = $4 AND token = $5) RETURNING id`, title, content, threadid, userId, token).Scan(&modifiedIns)
 
-	if content != nil {
-		_, err := tx.Exec("UPDATE Threads SET content = $1 WHERE id = $2", content, threadid)
-		if err != nil {
-			return errors.New("Content has improper formatting")
-		}
+	if err != nil {
+		return errors.New("Title or content has improper formatting, or you do not have the necessarily priviliges to modify this asset")
 	}
 
 	if tags != nil {
@@ -282,12 +264,22 @@ func EditThreadById(db *sql.DB, title *string, content *string,
 			return errors.New("Unable to delete thread tags")
 		}
 
-		for _, tagId := range tags {
-			_, err := tx.Exec("INSERT INTO Thread_Tags VALUES ($1, $2)", threadid, tagId)
-			if err != nil {
-				return errors.New("Tags has improper formatting")
+		if (len(tags) > 0) {
+			sql_statement := "INSERT INTO Thread_Tags VALUES "
+			vals := []any{}
+			vals = append(vals, threadid)
+
+			for i, tagId := range tags {
+				sql_statement += fmt.Sprintf("($1, $%d),", i + 2)
+				vals = append(vals, tagId)
 			}
-		}
+
+			_, err = tx.Exec(sql_statement[0: (len(sql_statement) - 1)], vals...)
+			if err != nil {
+				fmt.Println(err)
+				return errors.New("Tags have improper formatting")
+			}
+		}	
 	}
 
 	err = tx.Commit()
@@ -299,23 +291,19 @@ func EditThreadById(db *sql.DB, title *string, content *string,
 }
 
 func DeleteThread(db *sql.DB, threadId int, token string, userId int) error {
-	tx, err := db.Begin()
-	if err != nil {
-		return errors.New("Unable to begin database transaction")
-	}
-	defer tx.Rollback()
 
-	err = checkToken(db, userId, token)
-
+	/*err := checkToken(db, userId, token)
 	if err != nil {
 		return err
-	}
+	}*/
 
+	// Terrible way of doing auth. Should make a middleware that automates token checking.
 	deleteStatement := `
 	UPDATE threads
 	SET is_deleted = true
 	WHERE id = $1
 	AND authorid = $2
+	AND is_deleted = false
 	AND EXISTS (
 		SELECT token
 		FROM tokens
@@ -324,57 +312,27 @@ func DeleteThread(db *sql.DB, threadId int, token string, userId int) error {
 	RETURNING id
 	`
 
-	rows, err := tx.Query(deleteStatement, threadId, userId, token)
+	var tmpId int
+	err := db.QueryRow(deleteStatement, threadId, userId, token).Scan(&tmpId)
 
-	if err != nil {
+	if err == sql.ErrNoRows {
+		return errors.New("Thread is not found or has been deleted")
+	} else if err != nil {
 		return errors.New("Unable to delete thread")
-	}
-
-	//Check if any threads is deleted. throw exception
-	//if none is effected.
-	isThreadFound := false
-
-	for rows.Next() {
-		isThreadFound = true
-		break
-	}
-
-	if !isThreadFound {
-		return errors.New("Thread Not Found")
-	}
-
-	// deleteTagsStatement := `
-	// DELETE FROM thread_tags
-	// WHERE threadid = $1
-	// AND EXISTS (
-	// 	SELECT id
-	// 	FROM threads
-	// 	WHERE id = $1
-	// 	AND is_deleted = true
-	// )
-	// `
-	// _,  err = tx.Exec(deleteTagsStatement, threadId)
-
-	// if err != nil {
-	// 	return err
-	// 	// return errors.New("Unable to delete thread")
-	// }
-
-	err = tx.Commit()
-	if err != nil {
-		return errors.New("Unable to commit transaction")
 	}
 
 	return nil
 }
 
 func PostComment(db *sql.DB, authorid int, content string, parentid int, threadid int) (int, error) {
-	newCommentId := getCommentId(db)
-	rows, err := db.Query("INSERT INTO Comments (authorid, content, id, is_deleted, parentid, threadid, timestamp) VALUES ($1, $2, $3, $4, $5, $6, $7)", authorid, content, newCommentId, false, parentid, threadid, time.Now().Format("2006-01-02 15:04:05"))
+	var newCommentId int
+	err := db.QueryRow(`INSERT INTO 
+	Comments (authorid, content, id, is_deleted, parentid, threadid, timestamp) 
+	VALUES ($1, $2, (SELECT COUNT(*)
+	FROM Comments) + 1, $3, $4, $5, $6) RETURNING id`, authorid, content, false, parentid, threadid, time.Now().Format("2006-01-02 15:04:05")).Scan(&newCommentId)
 	if err != nil {
-		return -1, errors.New(err.Error())
+		return -1, errors.New("Unable to post comment")
 	}
-	defer rows.Close()
 	return newCommentId, nil
 }
 
