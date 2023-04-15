@@ -28,5 +28,14 @@ func GetDb() *sql.DB {
 		panic(err)
 	}
 
+	// Increase maximum idle connections to improve latency.
+	db.SetMaxIdleConns(5)
+
+	// Eagerly starts a connection with db
+	err = db.Ping()
+	if err != nil {
+		panic(err)
+	}
+
 	return db
 }
