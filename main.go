@@ -32,7 +32,6 @@ func main() {
 
 	r.GET("/user/:userid", router.GetUserInfoByID(db))
 
-	r.GET("/popular_modules", router.GetPopularModules(db))
 	r.POST("/module", router.GetModules(db))
 	r.GET("/module/:moduleid", router.GetModuleByModuleId(db))
 	r.POST("/module/:moduleid", middlewares.JwtAuthMiddleware(), router.PostThread(db))

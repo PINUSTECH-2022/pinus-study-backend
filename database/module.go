@@ -18,47 +18,15 @@ type Module struct {
 	Threads         []Thread
 }
 
-func GetPopularModules(db *sql.DB) []string {
-	sql_statement := `
-	SELECT Modules.id, COUNT(Threads.id) AS popularity 
-	FROM Modules, Threads 
-	WHERE Modules.id = Threads.moduleid 
-	GROUP BY Modules.id 
-	ORDER BY popularity DESC 
-	LIMIT 12;
-	`
-
-	rows, err := db.Query(sql_statement)
-	if err != nil {
-		panic(err)
-	}
-	defer rows.Close()
-
-	var popularModules []string
-
-	for rows.Next() {
-		var mod string
-		var popularity int
-		err := rows.Scan(&mod, &popularity)
-		if err != nil {
-			fmt.Println(err.Error())
-			panic(err)
-		}
-		popularModules = append(popularModules, mod)
-	}
-
-	if rows.Err() != nil {
-		fmt.Println(err.Error())
-		panic(err)
-	}
-
-	return popularModules
-}
-
 func GetModules(db *sql.DB, keyword string, page int) []Module {
+	fmt.Println("Executing ")
 	sql_statement := `
-	SELECT id FROM MODULES
-	WHERE id LIKE '%' || UPPER($1) || '%'
+	SELECT Modules.id, COUNT(Threads.moduleid) AS popularity
+	FROM Modules
+	LEFT JOIN Threads ON Modules.id = Threads.moduleid
+	WHERE Modules.id LIKE '%' || UPPER($1) || '%'
+	GROUP BY Modules.id
+	ORDER BY popularity DESC
 	OFFSET $2
 	LIMIT 12
 	`
@@ -73,7 +41,8 @@ func GetModules(db *sql.DB, keyword string, page int) []Module {
 
 	for rows.Next() {
 		var mod Module
-		err := rows.Scan(&mod.Id)
+		var popularity int
+		err := rows.Scan(&mod.Id, &popularity)
 		if err != nil {
 			panic(err)
 		}

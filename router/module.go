@@ -86,14 +86,3 @@ func PostThread(db *sql.DB) func(c *gin.Context) {
 		})
 	}
 }
-
-func GetPopularModules(db *sql.DB) func(c *gin.Context) {
-	return func(c *gin.Context) {
-		fmt.Println("Fetching from database...")
-		modules := database.GetPopularModules(db)
-		fmt.Println("Fetched")
-		c.JSON(http.StatusOK, gin.H{
-			"module_list": modules,
-		})
-	}
-}
