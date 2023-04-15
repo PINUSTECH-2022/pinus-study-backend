@@ -41,10 +41,11 @@ func GetThreadById(db *sql.DB, threadid string) Thread {
 	err = db.QueryRow(
 	`SELECT t.id, t.title, t.content, t.moduleid, 
 	t.authorid, t.timestamp, t.is_deleted, u.username,
-	COUNT(CASE WHEN lt.state = TRUE THEN 1 END),
-	COUNT(CASE WHEN lt.state = FALSE THEN 1 END)
-	FROM Threads as t, Users as u, Likes_Threads as lt 
-	WHERE u.id = t.id AND t.id = $1 AND lt.threadid = t.id`, 
+	(SELECT COUNT(*) FROM Likes_Threads WHERE state=TRUE AND threadid = t.id),
+	(SELECT COUNT(*) FROM Likes_Threads WHERE state=FALSE AND threadid = t.id)
+	FROM Threads as t, Users as u
+	WHERE u.id = t.authorid AND t.id = $1
+	`, 
 	threadidInt).Scan(&thread.Id, &thread.Title, &thread.Content, &thread.ModuleId, 
 		&thread.AuthorId, &thread.Timestamp, &thread.IsDeleted, &thread.Username,
 	&thread.LikesCount, &thread.DislikesCount)
