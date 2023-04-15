@@ -79,11 +79,8 @@ func LogIn(db *sql.DB) func(c *gin.Context) {
 			})
 			return
 		}
-		// fmt.Println("generating token")
+
 		success, userid, token, err2 := database.LogIn(db, User.NameOrEmail, User.Password)
-		// fmt.Println("token generated")
-		// fmt.Println(token)
-		// fmt.Println(err2)
 
 		if err2 != nil {
 			c.JSON(http.StatusOK, gin.H{

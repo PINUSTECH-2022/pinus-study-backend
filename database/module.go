@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"strconv"
 	"time"
 
 	_ "github.com/lib/pq"
@@ -19,14 +18,19 @@ type Module struct {
 }
 
 func GetModules(db *sql.DB, keyword string, page int) []Module {
+	fmt.Println("Executing SQL. Keyword: ", keyword)
 	sql_statement := `
-	SELECT * FROM MODULES
-	WHERE id LIKE '%' || UPPER($1) || '%'
+	SELECT Modules.id, COUNT(Threads.moduleid) AS popularity
+	FROM Modules
+	LEFT JOIN Threads ON Modules.id = Threads.moduleid
+	WHERE Modules.id LIKE '%' || UPPER($1) || '%'
+	GROUP BY Modules.id
+	ORDER BY popularity DESC
 	OFFSET $2
-	LIMIT 10
+	LIMIT 12
 	`
 
-	rows, err := db.Query(sql_statement, keyword, 10*(page-1))
+	rows, err := db.Query(sql_statement, keyword, 12*(page-1))
 	if err != nil {
 		panic(err)
 	}
@@ -36,9 +40,8 @@ func GetModules(db *sql.DB, keyword string, page int) []Module {
 
 	for rows.Next() {
 		var mod Module
-		err := rows.Scan(&mod.Id, &mod.Name, &mod.Desc)
-		mod.SubscriberCount = getSubscriberCount(db, mod.Id)
-		mod.Threads = []Thread{}
+		var popularity int
+		err := rows.Scan(&mod.Id, &popularity)
 		if err != nil {
 			panic(err)
 		}
@@ -48,7 +51,7 @@ func GetModules(db *sql.DB, keyword string, page int) []Module {
 	if rows.Err() != nil {
 		panic(err)
 	}
-
+	fmt.Println(modules)
 	return modules
 }
 
@@ -80,9 +83,19 @@ func getSubscriberCount(db *sql.DB, moduleid string) int {
 }
 
 func GetModuleByModuleId(db *sql.DB, moduleid string) Module {
+	query := fmt.Sprintf(`
+	SELECT M.id, M.name, M.description, COUNT(S.moduleid), T.id, T.title, T.content, T.moduleid, T.authorid, T.timestamp, T.is_deleted 
+	FROM Modules AS M 
+	LEFT JOIN Threads AS T ON M.id = T.moduleid 
+	LEFT JOIN Subscribes AS S ON S.moduleid = M.id 
+	WHERE M.id = '%s' 
+	GROUP BY M.id, M.name, M.description, T.id, T.title, T.content, T.moduleid, T.authorid, T.timestamp, T.is_deleted;
+	`, moduleid)
+
 	fmt.Println("a")
-	rows, err := db.Query("SELECT * FROM Modules WHERE id = $1", moduleid)
+	rows, err := db.Query(query)
 	if err != nil {
+		fmt.Println(err.Error())
 		panic(err)
 	}
 	defer rows.Close()
@@ -90,32 +103,33 @@ func GetModuleByModuleId(db *sql.DB, moduleid string) Module {
 	var mod Module
 	fmt.Println("b")
 	for rows.Next() {
-		err := rows.Scan(&mod.Id, &mod.Name, &mod.Desc)
-		mod.SubscriberCount = getSubscriberCount(db, mod.Id)
+		var thread Thread
+		err := rows.Scan(&mod.Id, &mod.Name, &mod.Desc, &mod.SubscriberCount, &thread.Id, &thread.Title, &thread.Content, &thread.ModuleId, &thread.AuthorId, &thread.Timestamp, &thread.IsDeleted)
+		mod.Threads = append(mod.Threads, thread)
 		if err != nil {
 			panic(err)
 		}
 	}
-	fmt.Println(mod)
-	if rows.Err() != nil {
-		panic(err)
-	}
-	fmt.Println(mod.Id)
-	thread_ids, err := db.Query("SELECT id FROM Threads WHERE moduleid = $1", mod.Id)
-	if err != nil {
-		panic(err)
-	}
-	defer thread_ids.Close()
-	fmt.Println("TEST")
-	for thread_ids.Next() {
-		var thread_id int
-		err := thread_ids.Scan(&thread_id)
-		if err != nil {
-			panic(err)
-		}
-		fmt.Println(thread_id)
-		mod.Threads = append(mod.Threads, GetThreadById(db, strconv.Itoa(thread_id)))
-	}
+	// fmt.Println(mod)
+	// if rows.Err() != nil {
+	// 	panic(err)
+	// }
+	// fmt.Println(mod.Id)
+	// thread_ids, err := db.Query("SELECT id FROM Threads WHERE moduleid = $1", mod.Id)
+	// if err != nil {
+	// 	panic(err)
+	// }
+	// defer thread_ids.Close()
+	// fmt.Println("TEST")
+	// for thread_ids.Next() {
+	// 	var thread_id int
+	// 	err := thread_ids.Scan(&thread_id)
+	// 	if err != nil {
+	// 		panic(err)
+	// 	}
+	// 	fmt.Println(thread_id)
+	// 	mod.Threads = append(mod.Threads, GetThreadById(db, strconv.Itoa(thread_id)))
+	// }
 
 	fmt.Println(mod)
 	return mod
