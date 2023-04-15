@@ -78,7 +78,6 @@ func SignUp(db *sql.DB, email string, username string, password string) (int, st
 }
 
 func LogIn(db *sql.DB, nameOrEmail string, password string) (bool, int, string, error) {
-
 	var (
 		encryptedPassword string
 		saltString        string
@@ -127,7 +126,7 @@ func checkToken(db *sql.DB, userId int, token string) error {
 
 	rows, err := db.Query(sql_statement, userId, token)
 
-	if (err != nil) {
+	if err != nil {
 		return errors.New("Unauthorized")
 	}
 

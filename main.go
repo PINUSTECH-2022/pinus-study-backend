@@ -32,6 +32,7 @@ func main() {
 
 	r.GET("/user/:userid", router.GetUserInfoByID(db))
 
+	r.GET("/popular_modules", router.GetPopularModules(db))
 	r.POST("/module", router.GetModules(db))
 	r.GET("/module/:moduleid", router.GetModuleByModuleId(db))
 	r.POST("/module/:moduleid", middlewares.JwtAuthMiddleware(), router.PostThread(db))
@@ -43,7 +44,7 @@ func main() {
 	r.GET("/thread/:threadid", router.GetThreadById(db))
 	r.PUT("/thread/:threadid", router.EditThreadById(db))
 	r.POST("/thread/:threadid", middlewares.JwtAuthMiddleware(), router.PostComment(db))
-	r.DELETE("/thread/:threadid", router.DeleteThreadById(db));
+	r.DELETE("/thread/:threadid", router.DeleteThreadById(db))
 
 	r.GET("/subscribes/:moduleid", router.GetSubscribers(db))
 	r.GET("/subscribes/:moduleid/:userid", router.DoesSubscribe(db))

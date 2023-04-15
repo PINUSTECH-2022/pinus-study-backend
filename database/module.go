@@ -18,12 +18,49 @@ type Module struct {
 	Threads         []Thread
 }
 
+func GetPopularModules(db *sql.DB) []string {
+	sql_statement := `
+	SELECT Modules.id, COUNT(Threads.id) AS popularity 
+	FROM Modules, Threads 
+	WHERE Modules.id = Threads.moduleid 
+	GROUP BY Modules.id 
+	ORDER BY popularity DESC 
+	LIMIT 12;
+	`
+
+	rows, err := db.Query(sql_statement)
+	if err != nil {
+		panic(err)
+	}
+	defer rows.Close()
+
+	var popularModules []string
+
+	for rows.Next() {
+		var mod string
+		var popularity int
+		err := rows.Scan(&mod, &popularity)
+		if err != nil {
+			fmt.Println(err.Error())
+			panic(err)
+		}
+		popularModules = append(popularModules, mod)
+	}
+
+	if rows.Err() != nil {
+		fmt.Println(err.Error())
+		panic(err)
+	}
+
+	return popularModules
+}
+
 func GetModules(db *sql.DB, keyword string, page int) []Module {
 	sql_statement := `
-	SELECT * FROM MODULES
+	SELECT id FROM MODULES
 	WHERE id LIKE '%' || UPPER($1) || '%'
 	OFFSET $2
-	LIMIT 10
+	LIMIT 12
 	`
 
 	rows, err := db.Query(sql_statement, keyword, 10*(page-1))
@@ -36,9 +73,7 @@ func GetModules(db *sql.DB, keyword string, page int) []Module {
 
 	for rows.Next() {
 		var mod Module
-		err := rows.Scan(&mod.Id, &mod.Name, &mod.Desc)
-		mod.SubscriberCount = getSubscriberCount(db, mod.Id)
-		mod.Threads = []Thread{}
+		err := rows.Scan(&mod.Id)
 		if err != nil {
 			panic(err)
 		}
