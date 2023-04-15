@@ -20,7 +20,22 @@ type Comment struct {
 
 func GetCommentById(db *sql.DB, id int) Comment {
 	sql_statement := `
-	SELECT c.content, u.id, u.username, c.is_deleted, c.timestamp
+	SELECT c.content, u.id, u.username, c.is_deleted, c.timestamp,
+		(
+			SELECT COUNT(*)
+			FROM Likes_Comments
+			WHERE state = TRUE AND commentid = $1
+		) as likes,
+		(
+			SELECT COUNT(*)
+			FROM Likes_Comments
+			WHERE state = FALSE AND commentid = $1
+		) as dislikes,
+		array(
+			SELECT CAST(c.id AS integer)
+			FROM Comments c
+			WHERE c.parentid = $1
+		) as childComments
 	FROM Comments c JOIN Users u ON c.authorid = u.id
 	WHERE c.id = $1
 	`
@@ -31,10 +46,12 @@ func GetCommentById(db *sql.DB, id int) Comment {
 	defer rows.Close()
 
 	var comment Comment
+	var childComments []uint8
 
 	for rows.Next() {
 		err := rows.Scan(&comment.Content, &comment.AuthorId,
-			&comment.Username, &comment.IsDeleted, &comment.Timestamp)
+			&comment.Username, &comment.IsDeleted, &comment.Timestamp,
+			&comment.Likes, &comment.Dislikes, &childComments)
 		if err != nil {
 			panic(err)
 		}
@@ -44,9 +61,15 @@ func GetCommentById(db *sql.DB, id int) Comment {
 		panic(err)
 	}
 
-	comment.Likes = getLikesFromCommentId(db, id, true)
-	comment.Dislikes = getLikesFromCommentId(db, id, false)
-	comment.CommentChilds = getChildrensFromCommentId(db, id)
+	comment.CommentChilds = make([]int, len(childComments))
+	
+	for i, id := range childComments {
+		comment.CommentChilds[i] = int(id)
+	}
+
+	// comment.Likes = getLikesFromCommentId(db, id, true)
+	// comment.Dislikes = getLikesFromCommentId(db, id, false)
+	// comment.CommentChilds = getChildrensFromCommentId(db, id)
 
 	return comment
 }
