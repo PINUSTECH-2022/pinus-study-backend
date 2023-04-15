@@ -32,6 +32,8 @@ func GetModules(db *sql.DB) func(c *gin.Context) {
 			SearchQuery.Page = 1
 		}
 
+		fmt.Println("Search Query Keyword: ", SearchQuery.Keyword)
+
 		modules := database.GetModules(db, SearchQuery.Keyword, SearchQuery.Page)
 		c.JSON(http.StatusOK, gin.H{
 			"module_list": modules,
