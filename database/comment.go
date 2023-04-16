@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"errors"
 
-	_ "github.com/lib/pq"
+	"github.com/lib/pq"
 )
 
 type Comment struct {
@@ -31,10 +31,12 @@ func GetCommentById(db *sql.DB, id int) Comment {
 			FROM Likes_Comments
 			WHERE state = FALSE AND commentid = $1
 		) as dislikes,
-		array(
-			SELECT CAST(c.id AS integer)
-			FROM Comments c
-			WHERE c.parentid = $1
+		(
+			SELECT ARRAY(
+			 	SELECT DISTINCT ch.id
+				FROM Comments ch
+				WHERE ch.parentid = c.id
+			)
 		) as childComments
 	FROM Comments c JOIN Users u ON c.authorid = u.id
 	WHERE c.id = $1
@@ -46,12 +48,12 @@ func GetCommentById(db *sql.DB, id int) Comment {
 	defer rows.Close()
 
 	var comment Comment
-	var childComments []uint8
+	var childComments []int64
 
 	for rows.Next() {
 		err := rows.Scan(&comment.Content, &comment.AuthorId,
 			&comment.Username, &comment.IsDeleted, &comment.Timestamp,
-			&comment.Likes, &comment.Dislikes, &childComments)
+			&comment.Likes, &comment.Dislikes, pq.Array(&childComments))
 		if err != nil {
 			panic(err)
 		}
@@ -66,10 +68,6 @@ func GetCommentById(db *sql.DB, id int) Comment {
 	for i, id := range childComments {
 		comment.CommentChilds[i] = int(id)
 	}
-
-	// comment.Likes = getLikesFromCommentId(db, id, true)
-	// comment.Dislikes = getLikesFromCommentId(db, id, false)
-	// comment.CommentChilds = getChildrensFromCommentId(db, id)
 
 	return comment
 }
