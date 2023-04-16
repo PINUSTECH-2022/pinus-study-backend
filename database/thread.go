@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
-	"sync"
 	"time"
 
 	_ "github.com/lib/pq"
@@ -27,11 +26,18 @@ type Thread struct {
 }
 
 func GetThreadById(db *sql.DB, threadid string) Thread {
-
 	threadidInt, err := strconv.Atoi(threadid)
-	if (err != nil) {
+	if err != nil {
 		panic(err)
 	}
+
+	// query := `SELECT T.id, T.title, T.content, T.moduleid, T.authorid, T.timestamp, T.is_deleted, 
+	//	(SELECT COUNT(*) FROM Likes_threads AS LT WHERE LT.threadid = T.id AND LT.state = true) AS likes_count, 
+	//	(SELECT COUNT(*) FROM Likes_threads AS LT WHERE LT.threadid = T.id AND LT.state = false) AS dislikes_count, U.username, C.id 
+	//	FROM Threads AS T 
+	//	JOIN Users AS U ON T.authorid = U.id 
+	//	LEFT JOIN Comments AS C ON C.threadid = T.id 
+	//	WHERE T.id = $1;`
 
 	var thread Thread
 	var wg sync.WaitGroup
@@ -44,8 +50,7 @@ func GetThreadById(db *sql.DB, threadid string) Thread {
 	(SELECT COUNT(*) FROM Likes_Threads WHERE state=TRUE AND threadid = t.id),
 	(SELECT COUNT(*) FROM Likes_Threads WHERE state=FALSE AND threadid = t.id)
 	FROM Threads as t, Users as u
-	WHERE u.id = t.authorid AND t.id = $1
-	`, 
+	WHERE u.id = t.authorid AND t.id = $1`, 
 	threadidInt).Scan(&thread.Id, &thread.Title, &thread.Content, &thread.ModuleId, 
 		&thread.AuthorId, &thread.Timestamp, &thread.IsDeleted, &thread.Username,
 	&thread.LikesCount, &thread.DislikesCount)
@@ -64,8 +69,9 @@ func GetThreadById(db *sql.DB, threadid string) Thread {
 	thread.Tags = getTags(db, thread.Id)
 	
 	wg.Wait()
-
+  
 	thread.Comments = <-comments_c
+
 	return thread
 }
 
@@ -123,7 +129,7 @@ func getLikesFromThreadId(db *sql.DB, id int, status bool) int {
 	var count int
 
 	err := db.QueryRow(sql_statement, status, id).Scan(&count)
-	if (err != nil) {
+	if err != nil {
 		panic(err)
 	}
 
@@ -242,22 +248,22 @@ func EditThreadById(db *sql.DB, title *string, content *string,
 			return errors.New("Unable to delete thread tags")
 		}
 
-		if (len(tags) > 0) {
+		if len(tags) > 0 {
 			sql_statement := "INSERT INTO Thread_Tags VALUES "
 			vals := []any{}
 			vals = append(vals, threadid)
 
 			for i, tagId := range tags {
-				sql_statement += fmt.Sprintf("($1, $%d),", i + 2)
+				sql_statement += fmt.Sprintf("($1, $%d),", i+2)
 				vals = append(vals, tagId)
 			}
 
-			_, err = tx.Exec(sql_statement[0: (len(sql_statement) - 1)], vals...)
+			_, err = tx.Exec(sql_statement[0:(len(sql_statement)-1)], vals...)
 			if err != nil {
 				fmt.Println(err)
 				return errors.New("Tags have improper formatting")
 			}
-		}	
+		}
 	}
 
 	err = tx.Commit()

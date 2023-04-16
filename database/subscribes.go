@@ -3,22 +3,28 @@ package database
 import (
 	"database/sql"
 	"errors"
+	"fmt"
 
 	_ "github.com/lib/pq"
 )
 
-func GetSubscribers(db *sql.DB, moduleid string) []int {
-	rows, err := db.Query("SELECT userid FROM Subscribes WHERE moduleid = $1", moduleid)
+type Subscriber struct {
+	Id       int
+	Username string
+}
+
+func GetSubscribers(db *sql.DB, moduleid string) []Subscriber {
+	rows, err := db.Query(fmt.Sprintf("SELECT S.userid, U.username FROM Subscribes AS S, Users AS U WHERE S.moduleid = '%s' AND S.userid = U.id;", moduleid))
 	if err != nil {
 		panic(err)
 	}
 	defer rows.Close()
 
-	var subscribers []int
+	var subscribers []Subscriber
 
 	for rows.Next() {
-		var subscriber int
-		err := rows.Scan(&subscriber)
+		var subscriber Subscriber
+		err := rows.Scan(&subscriber.Id, &subscriber.Username)
 		if err != nil {
 			panic(err)
 		}
