@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"example/web-service-gin/token"
+	"fmt"
 
 	_ "github.com/lib/pq"
 )
@@ -84,8 +85,19 @@ func LogIn(db *sql.DB, nameOrEmail string, password string) (bool, int, string, 
 		uid               int
 	)
 
-	err := db.QueryRow("SELECT password, salt, id FROM Users WHERE email = $1 OR username = $1", nameOrEmail).Scan(&encryptedPassword, &saltString, &uid)
+	rows, err := db.Query("SELECT password, salt, id FROM Users WHERE email = $1 OR username = $1", nameOrEmail)
+	if rows == nil {
+		return false, -1, "wrong username or password", nil
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		rows.Scan(&encryptedPassword, &saltString, &uid)
+		break
+	}
+
 	if err != nil {
+		fmt.Println("Err here", err.Error())
 		panic(err)
 	}
 
@@ -146,7 +158,7 @@ func checkToken(db *sql.DB, userId int, token string) error {
 
 func storeUserIdAndJWT(db *sql.DB, userid int, token string) error {
 	sql_statement := `
-	INSERT INTO tokens(userid, token) VALUES($1, $2)
+	INSERT INTO tokens(userid, token) VALUES($1, $2) ON CONFLICT DO NOTHING;
 	`
 	// fmt.Println(time.Now().Format("2025-01-02"))
 	rows, err := db.Query(sql_statement, userid, token)

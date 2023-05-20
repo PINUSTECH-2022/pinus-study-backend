@@ -1,8 +1,8 @@
 package main
 
 import (
+	"database/sql"
 	"encoding/json"
-	"example/web-service-gin/database"
 	"fmt"
 	"io"
 	"net/http"
@@ -14,6 +14,24 @@ type modules struct {
 	Title       string
 	ModuleCode  string
 	Description string
+}
+
+func GetDbNusMods() *sql.DB {
+	db, err := sql.Open("postgres", "postgresql://postgres:pinustech2023@db.sdfwupgscugadsdwtkgg.supabase.co:5432/postgres")
+	if err != nil {
+		panic(err)
+	}
+
+	// Increase maximum idle connections to improve latency.
+	db.SetMaxIdleConns(5)
+
+	// Eagerly starts a connection with db
+	err = db.Ping()
+	if err != nil {
+		panic(err)
+	}
+
+	return db
 }
 
 func main() {
@@ -35,7 +53,7 @@ func main() {
 		panic(jsonErr)
 	}
 
-	db := database.GetDb()
+	db := GetDbNusMods()
 	defer db.Close()
 
 	tx, dbErr := db.Begin()
@@ -44,14 +62,14 @@ func main() {
 		panic(dbErr)
 	}
 
-	stmt, prepErr := tx.Prepare("INSERT INTO Modules VALUES($1, $2, $3) ON CONFLICT DO NOTHING")
+	stmt, prepErr := tx.Prepare("INSERT INTO Modules VALUES($1, $2, $3) ON CONFLICT DO NOTHING;")
 
 	if prepErr != nil {
 		panic(prepErr)
 	}
 
 	for i := 0; i < len(mods); i++ {
-		fmt.Printf("%d\n", i)
+		fmt.Printf("%d %s\n", i, mods[i].ModuleCode)
 		_, stmtErr := stmt.Exec(mods[i].ModuleCode, mods[i].Title, mods[i].Description)
 
 		if stmtErr != nil {
