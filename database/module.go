@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	_ "github.com/lib/pq"
@@ -84,7 +85,7 @@ func getSubscriberCount(db *sql.DB, moduleid string) int {
 
 func GetModuleByModuleId(db *sql.DB, moduleid string) Module {
 	query := fmt.Sprintf(`
-	SELECT M.id, M.name, M.description, COUNT(S.moduleid), T.id, T.title, T.content, T.moduleid, T.authorid, T.timestamp, T.is_deleted 
+	SELECT M.id, M.name, M.description, COUNT(S.moduleid)
 	FROM Modules AS M 
 	LEFT JOIN Threads AS T ON M.id = T.moduleid 
 	LEFT JOIN Subscribes AS S ON S.moduleid = M.id 
@@ -92,7 +93,6 @@ func GetModuleByModuleId(db *sql.DB, moduleid string) Module {
 	GROUP BY M.id, M.name, M.description, T.id, T.title, T.content, T.moduleid, T.authorid, T.timestamp, T.is_deleted;
 	`, moduleid)
 
-	fmt.Println("a")
 	rows, err := db.Query(query)
 	if err != nil {
 		fmt.Println(err.Error())
@@ -101,67 +101,74 @@ func GetModuleByModuleId(db *sql.DB, moduleid string) Module {
 	defer rows.Close()
 
 	var mod Module
-	fmt.Println("b")
 	for rows.Next() {
-		var thread Thread
-		err := rows.Scan(&mod.Id, &mod.Name, &mod.Desc, &mod.SubscriberCount, &thread.Id, &thread.Title, &thread.Content, &thread.ModuleId, &thread.AuthorId, &thread.Timestamp, &thread.IsDeleted)
-		mod.Threads = append(mod.Threads, thread)
+		err := rows.Scan(&mod.Id, &mod.Name, &mod.Desc, &mod.SubscriberCount)
 		if err != nil {
 			panic(err)
 		}
 	}
-	// fmt.Println(mod)
-	// if rows.Err() != nil {
-	// 	panic(err)
-	// }
-	// fmt.Println(mod.Id)
-	// thread_ids, err := db.Query("SELECT id FROM Threads WHERE moduleid = $1", mod.Id)
-	// if err != nil {
-	// 	panic(err)
-	// }
-	// defer thread_ids.Close()
-	// fmt.Println("TEST")
-	// for thread_ids.Next() {
-	// 	var thread_id int
-	// 	err := thread_ids.Scan(&thread_id)
-	// 	if err != nil {
-	// 		panic(err)
-	// 	}
-	// 	fmt.Println(thread_id)
-	// 	mod.Threads = append(mod.Threads, GetThreadById(db, strconv.Itoa(thread_id)))
-	// }
+
+	query = fmt.Sprintf(`
+	SELECT T.id, T.title, T.content, T.moduleid, T.authorid, T.timestamp, T.is_deleted
+	FROM Modules AS M 
+	LEFT JOIN Threads AS T ON M.id = T.moduleid 
+	LEFT JOIN Subscribes AS S ON S.moduleid = M.id 
+	WHERE M.id = '%s' 
+	GROUP BY M.id, M.name, M.description, T.id, T.title, T.content, T.moduleid, T.authorid, T.timestamp, T.is_deleted;
+	`, moduleid)
+
+	rows, err = db.Query(query)
+	if err != nil {
+		fmt.Println(err.Error())
+		panic(err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var thread Thread
+		err := rows.Scan(&thread.Id, &thread.Title, &thread.Content, &thread.ModuleId, &thread.AuthorId, &thread.Timestamp, &thread.IsDeleted)
+		if err != nil {
+			break
+		}
+		mod.Threads = append(mod.Threads, thread)
+	}
 
 	fmt.Println(mod)
 	return mod
 }
 
 func PostThread(db *sql.DB, authorid int, content string, title string, tags []int, moduleid string) (int, error) {
-
+	fmt.Println("Posting thread...")
+	fmt.Println(authorid, content, title, tags, moduleid)
 	tx, err := db.Begin()
 	if err != nil {
+		fmt.Println("Error in initializing db: ", err.Error())
 		return -1, errors.New("Unable to begin database transaction")
 	}
 	defer tx.Rollback()
 
 	newThreadID := getThreadId(tx)
 
-	_, err = tx.Exec("INSERT INTO Threads (authorid, content, id, moduleid, timestamp, title) VALUES ($1, $2, $3, $4, $5, $6)", authorid, content, newThreadID, moduleid, time.Now().Format("2006-01-02 15:04:05"), title)
+	_, err = tx.Exec("INSERT INTO Threads (authorid, content, id, moduleid, timestamp, title) VALUES ($1, $2, $3, $4, $5, $6)", authorid, content, newThreadID, strings.ToUpper(moduleid), time.Now().Format("2006-01-02 15:04:05"), title)
 	if err != nil {
+		fmt.Println("Error in inserting thread into db: ", err.Error())
 		return -1, errors.New("Thread data is malformed.")
 	}
 
 	for _, tagId := range tags {
 		_, err := tx.Exec("INSERT INTO Thread_Tags VALUES ($1, $2)", newThreadID, tagId)
 		if err != nil {
+			fmt.Println("Error in inserting thread tag into db: ", err.Error())
 			return -1, errors.New("Tag data is malformed.")
 		}
 	}
 
 	err = tx.Commit()
 	if err != nil {
+		fmt.Println("Error in commiting thread posted: ", err.Error())
 		return -1, errors.New("Unable to commit transaction")
 	}
-
+	fmt.Println("Posted...")
 	return newThreadID, nil
 }
 
