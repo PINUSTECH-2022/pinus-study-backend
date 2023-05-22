@@ -3,6 +3,7 @@ package router
 import (
 	"database/sql"
 	"example/web-service-gin/database"
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -27,7 +28,7 @@ func EditThreadById(db *sql.DB) func(c *gin.Context) {
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{
 				"status": "failure",
-				"cause": "Thread id is malformed",
+				"cause":  "Thread id is malformed",
 			})
 			return
 		}
@@ -35,9 +36,9 @@ func EditThreadById(db *sql.DB) func(c *gin.Context) {
 		var EditedThread struct {
 			Title   *string `json:"title"`
 			Content *string `json:"content"`
-			Tags    []int  `json:"tags"`
-			UserId int 	`json:"userId"`
-			Token string `json:"token"`
+			Tags    []int   `json:"tags"`
+			UserId  int     `json:"userId"`
+			Token   string  `json:"token"`
 		}
 
 		err = c.ShouldBindJSON(&EditedThread)
@@ -45,12 +46,12 @@ func EditThreadById(db *sql.DB) func(c *gin.Context) {
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{
 				"status": "failure",
-				"cause": "Request body is malformed",
+				"cause":  "Request body is malformed",
 			})
 			return
 		}
 
-		err2 := database.EditThreadById(db, EditedThread.Title, EditedThread.Content, 
+		err2 := database.EditThreadById(db, EditedThread.Title, EditedThread.Content,
 			EditedThread.Tags, threadid, EditedThread.UserId, EditedThread.Token)
 		if err2 != nil {
 			c.JSON(http.StatusOK, gin.H{
@@ -73,7 +74,7 @@ func PostComment(db *sql.DB) func(c *gin.Context) {
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{
 				"status": "failure",
-				"cause": "Thread id is malformed",
+				"cause":  "Thread id is malformed",
 			})
 			return
 		}
@@ -87,11 +88,11 @@ func PostComment(db *sql.DB) func(c *gin.Context) {
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{
 				"status": "failure",
-				"cause": "Request body is malformed",
+				"cause":  "Request body is malformed",
 			})
 			return
 		}
-
+		fmt.Println("TEST")
 		commentId, err2 := database.PostComment(db, Comment.AuthorId, Comment.Content, Comment.ParentId, threadid)
 		if err2 != nil {
 			c.JSON(http.StatusOK, gin.H{
@@ -103,26 +104,26 @@ func PostComment(db *sql.DB) func(c *gin.Context) {
 
 		//err := database.EditThreadById(db, threadid)
 		c.JSON(http.StatusOK, gin.H{
-			"status": "success",
+			"status":    "success",
 			"commentid": commentId,
 		})
 	}
 }
 
-func DeleteThreadById (db *sql.DB) func(c *gin.Context) {
+func DeleteThreadById(db *sql.DB) func(c *gin.Context) {
 	return func(c *gin.Context) {
 		threadId, err := strconv.Atoi(c.Param("threadid"))
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{
 				"status": "failure",
-				"cause": "Thread id is malformed",
+				"cause":  "Thread id is malformed",
 			})
 			return
 		}
 
 		var userData struct {
-			Token string `json:"token" binding:"required"`
-			UserId int `json:"userid" binding:"required"`
+			Token  string `json:"token" binding:"required"`
+			UserId int    `json:"userid" binding:"required"`
 		}
 
 		err = c.ShouldBindJSON(&userData)
@@ -130,7 +131,7 @@ func DeleteThreadById (db *sql.DB) func(c *gin.Context) {
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{
 				"status": "failure",
-				"cause": "JSON body is malformed",
+				"cause":  "JSON body is malformed",
 			})
 			return
 		}
@@ -140,7 +141,7 @@ func DeleteThreadById (db *sql.DB) func(c *gin.Context) {
 		if err != nil {
 			c.JSON(http.StatusOK, gin.H{
 				"status": "failure",
-				"cause": err.Error(),
+				"cause":  err.Error(),
 			})
 			return
 		}

@@ -31,13 +31,14 @@ func GetThreadById(db *sql.DB, threadid string) Thread {
 		panic(err)
 	}
 
-	query := fmt.Sprintf(`SELECT T.id, T.title, T.content, T.moduleid, T.authorid, T.timestamp, T.is_deleted, 
+	query := fmt.Sprintf(`
+		SELECT T.id, T.title, T.content, T.moduleid, T.authorid, T.timestamp, T.is_deleted, 
 		(SELECT COUNT(*) FROM Likes_threads AS LT WHERE LT.threadid = T.id AND LT.state = true) AS likes_count, 
 		(SELECT COUNT(*) FROM Likes_threads AS LT WHERE LT.threadid = T.id AND LT.state = false) AS dislikes_count, U.username, C.id 
 		FROM Threads AS T 
 		JOIN Users AS U ON T.authorid = U.id 
 		LEFT JOIN Comments AS C ON C.threadid = T.id 
-		WHERE T.id = %d;`,
+		WHERE T.id = %d AND C.parentid = 0`,
 		threadidInt)
 
 	rows, err := db.Query(query)
@@ -48,7 +49,6 @@ func GetThreadById(db *sql.DB, threadid string) Thread {
 	defer rows.Close()
 
 	var thread Thread
-	fmt.Println("b")
 	for rows.Next() {
 		var commentId sql.NullInt64
 		err := rows.Scan(&thread.Id, &thread.Title, &thread.Content, &thread.ModuleId, &thread.AuthorId, &thread.Timestamp, &thread.IsDeleted, &thread.LikesCount, &thread.DislikesCount, &thread.Username, &commentId)
@@ -60,7 +60,6 @@ func GetThreadById(db *sql.DB, threadid string) Thread {
 			commentIdNotNull = int(commentId.Int64)
 			thread.Comments = append(thread.Comments, commentIdNotNull)
 		}
-
 	}
 	return thread
 
@@ -361,6 +360,7 @@ func PostComment(db *sql.DB, authorid int, content string, parentid int, threadi
 	VALUES ($1, $2, (SELECT COUNT(*)
 	FROM Comments) + 1, $3, $4, $5, $6) RETURNING id`, authorid, content, false, parentid, threadid, time.Now().Format("2006-01-02 15:04:05")).Scan(&newCommentId)
 	if err != nil {
+		fmt.Println(err.Error())
 		return -1, errors.New("Unable to post comment")
 	}
 	return newCommentId, nil
