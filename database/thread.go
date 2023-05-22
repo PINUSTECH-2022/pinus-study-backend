@@ -34,11 +34,13 @@ func GetThreadById(db *sql.DB, threadid string) Thread {
 	query := fmt.Sprintf(`
 		SELECT T.id, T.title, T.content, T.moduleid, T.authorid, T.timestamp, T.is_deleted, 
 		(SELECT COUNT(*) FROM Likes_threads AS LT WHERE LT.threadid = T.id AND LT.state = true) AS likes_count, 
-		(SELECT COUNT(*) FROM Likes_threads AS LT WHERE LT.threadid = T.id AND LT.state = false) AS dislikes_count, U.username, C.id 
-		FROM Threads AS T 
+		(SELECT COUNT(*) FROM Likes_threads AS LT WHERE LT.threadid = T.id AND LT.state = false) AS dislikes_count, U.username, C.id AS commentid
+		FROM (
+		SELECT * FROM Threads AS subT WHERE subT.id = 0
+		) AS T 
 		JOIN Users AS U ON T.authorid = U.id 
 		LEFT JOIN Comments AS C ON C.threadid = T.id 
-		WHERE T.id = %d AND C.parentid = 0`,
+		WHERE T.id = %d`,
 		threadidInt)
 
 	rows, err := db.Query(query)
