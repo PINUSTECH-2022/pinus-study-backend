@@ -36,7 +36,7 @@ func GetDbNusMods() *sql.DB {
 
 func main() {
 	API_BASE_URL := "https://api.nusmods.com/v2"
-	acadYear := "2022-2023" // must be in yyyy-yyyy format
+	acadYear := "2023-2024" // must be in yyyy-yyyy format
 	fetchUrl := fmt.Sprintf("%s/%s/%s", API_BASE_URL, acadYear, "moduleInfo.json")
 	resp, err := http.Get(fetchUrl)
 
