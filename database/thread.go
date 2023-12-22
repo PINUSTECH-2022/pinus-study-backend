@@ -38,7 +38,7 @@ func GetThreadById(db *sql.DB, threadid string) Thread {
 		FROM Threads AS T 
 		JOIN Users AS U ON T.authorid = U.id 
 		LEFT JOIN Comments AS C ON C.threadid = T.id 
-		WHERE T.id = %d AND C.parentid = 0`,
+		WHERE T.id = %d AND (C.parentid = 0 OR C.parentid IS NULL);`,
 		threadidInt)
 
 	rows, err := db.Query(query)
