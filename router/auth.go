@@ -14,6 +14,22 @@ func isEmailValid(e string) bool {
 	return emailRegex.MatchString(e)
 }
 
+func isEmailAvailable(db *sql.DB, email string) bool {
+	rows, _ := db.Query("SELECT email FROM Users WHERE email = $1", email)
+	for rows.Next() {
+		return false
+	}
+	return true
+}
+
+func isUsernameAvailable(db *sql.DB, username string) bool {
+	rows, _ := db.Query("SELECT username FROM Users WHERE username = $1", username)
+	for rows.Next() {
+		return false
+	}
+	return true
+}
+
 func SignUp(db *sql.DB) func(c *gin.Context) {
 	return func(c *gin.Context) {
 		var User struct {
@@ -44,6 +60,22 @@ func SignUp(db *sql.DB) func(c *gin.Context) {
 			c.JSON(http.StatusOK, gin.H{
 				"status": "failure",
 				"cause":  "email is not valid",
+			})
+			return
+		}
+
+		if !isEmailAvailable(db, User.Email) {
+			c.JSON(http.StatusOK, gin.H{
+				"status": "failure",
+				"cause":	"email is already taken",
+			})
+			return
+		}
+
+		if !isUsernameAvailable(db, User.Username) {
+			c.JSON(http.StatusOK, gin.H{
+				"status": "failure",
+				"cause":	"username is already taken",
 			})
 			return
 		}
