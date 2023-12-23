@@ -3,7 +3,6 @@ package router
 import (
 	"database/sql"
 	"example/web-service-gin/database"
-	"fmt"
 	"net/http"
 	"strconv"
 
@@ -82,7 +81,7 @@ func PostComment(db *sql.DB) func(c *gin.Context) {
 		var Comment struct {
 			AuthorId int    `json:"authorid" binding:"required"`
 			Content  string `json:"content" binding:"required"`
-			ParentId int    `json:"parentid" binding:"required"`
+			ParentId int    `json:"parentid"`
 		}
 		err = c.ShouldBindJSON(&Comment)
 		if err != nil {
@@ -92,7 +91,6 @@ func PostComment(db *sql.DB) func(c *gin.Context) {
 			})
 			return
 		}
-		fmt.Println("TEST")
 		commentId, err2 := database.PostComment(db, Comment.AuthorId, Comment.Content, Comment.ParentId, threadid)
 		if err2 != nil {
 			c.JSON(http.StatusOK, gin.H{
