@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
-	"time"
 
 	_ "github.com/lib/pq"
 )
@@ -354,11 +353,15 @@ func DeleteThread(db *sql.DB, threadId int, token string, userId int) error {
 }
 
 func PostComment(db *sql.DB, authorid int, content string, parentid int, threadid int) (int, error) {
+	pid := sql.NullInt64{
+		Int64: int64(parentid),
+		Valid: parentid != 0,
+	}
 	var newCommentId int
 	err := db.QueryRow(`INSERT INTO 
-	Comments (authorid, content, id, is_deleted, parentid, threadid, timestamp) 
+	Comments (authorid, content, id, is_deleted, parentid, threadid) 
 	VALUES ($1, $2, (SELECT COUNT(*)
-	FROM Comments) + 1, $3, $4, $5, $6) RETURNING id`, authorid, content, false, parentid, threadid, time.Now().Format("2006-01-02 15:04:05")).Scan(&newCommentId)
+	FROM Comments) + 1, $3, $4, $5) RETURNING id`, authorid, content, false, pid, threadid).Scan(&newCommentId)
 	if err != nil {
 		fmt.Println(err.Error())
 		return -1, errors.New("Unable to post comment")
