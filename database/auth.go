@@ -169,3 +169,20 @@ func storeUserIdAndJWT(db *sql.DB, userid int, token string) error {
 
 	return nil
 }
+
+func StoreSecretCode(db *sql.DB, userid int, email string, secretCode string) (int, error) {
+	sql_statement := `
+	INSERT INTO Email_verifications (id, user_id, email, secret_code) 
+	VALUES ((SELECT COUNT(*) FROM Email_verifications) + 1, $1, $2, $3)
+	RETURNING id;
+	`
+
+	var id int
+
+	err := db.QueryRow(sql_statement, userid, email, secretCode).Scan(&id)
+
+	if err != nil {
+		panic(err)
+	}
+	return id, nil
+}
