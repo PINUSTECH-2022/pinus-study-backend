@@ -78,15 +78,15 @@ func SignUp(db *sql.DB) func(c *gin.Context) {
 			return
 		}
 
-		// err3 := makeVerification(db, userId, User.Email, User.Username)
+		err3 := makeVerification(db, userId, User.Email, User.Username)
 
-		// if err3 != nil {
-		// 	c.JSON(http.StatusOK, gin.H{
-		// 		"status": "failure",
-		// 		"cause":  err3.Error(),
-		// 	})
-		// 	return
-		// }
+		if err3 != nil {
+			c.JSON(http.StatusOK, gin.H{
+				"status": "failure",
+				"cause":  err3.Error(),
+			})
+			return
+		}
 
 		c.JSON(http.StatusOK, gin.H{
 			"status": "success",
@@ -156,7 +156,7 @@ func makeVerification(db *sql.DB, userid int, email string, username string) err
 		return err
 	}
 
-	subject := "Welacome to PINUS STUDY"
+	subject := "Welcome to PINUS STUDY!"
 	verifyUrl := fmt.Sprintf("%s/verify_email?email_id=%d&secret_code=%s", frontendUrl, id, secretCode)
 	content := fmt.Sprintf(`Dear Pinusian, <br/>
 	There has been a request to register the address %s with the user %s on the PINUS STUDY. 

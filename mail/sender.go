@@ -1,7 +1,10 @@
 package mail
 
 import (
+	"fmt"
 	"net/smtp"
+
+	"github.com/jordan-wright/email"
 )
 
 const (
@@ -42,33 +45,21 @@ func (sender *GmailSender) SendEmail(
 	bcc []string,
 	attachFiles []string,
 ) error {
-	// Set up authentication information.
-	auth := smtp.PlainAuth("", sender.fromEmailAddress, sender.fromEmailPassword, smtpAuthAddress)
+	e := email.NewEmail()
+	e.From = fmt.Sprintf("%s <%s>", sender.name, sender.fromEmailAddress)
+	e.Subject = subject
+	e.HTML = []byte(content)
+	e.To = to
+	e.Cc = cc
+	e.Bcc = bcc
 
-	// Connect to the server, authenticate, set the sender and recipient,
-	// and send the email all in one step.
-	// to := []string{"recipient@example.net"}
-	msg := []byte("To: " + to[0] + "\r\n" +
-		"Subject: " + subject + "!\r\n" +
-		"\r\n" +
-		content + "\r\n")
-	return smtp.SendMail(smtpServerAddress, auth, sender.fromEmailAddress, to, msg)
+	for _, f := range attachFiles {
+		_, err := e.AttachFile(f)
+		if err != nil {
+			return fmt.Errorf("failed to attach file %s: %w", f, err)
+		}
+	}
 
-	// e := email.NewEmail()
-	// e.From = fmt.Sprintf("%s <%s>", sender.name, sender.fromEmailAddress)
-	// e.Subject = subject
-	// e.HTML = []byte(content)
-	// e.To = to
-	// e.Cc = cc
-	// e.Bcc = bcc
-
-	// for _, f := range attachFiles {
-	// 	_, err := e.AttachFile(f)
-	// 	if err != nil {
-	// 		return fmt.Errorf("failed to attach file %s: %w", f, err)
-	// 	}
-	// }
-
-	// smtpAuth := smtp.PlainAuth("", sender.fromEmailAddress, sender.fromEmailPassword, smtpAuthAddress)
-	// return e.Send(smtpServerAddress, smtpAuth)
+	smtpAuth := smtp.PlainAuth("", sender.fromEmailAddress, sender.fromEmailPassword, smtpAuthAddress)
+	return e.Send(smtpServerAddress, smtpAuth)
 }
