@@ -184,15 +184,37 @@ func VerifyEmail(db *sql.DB) func(c *gin.Context) {
 			return
 		}
 
-		storedSecretCode, isExpired, err1 := database.GetSecretCode(db, emailId)
+		var User struct {
+			SecretCode string `json:"secretcode" binding:"required"`
+		}
+
+		err1 := c.ShouldBindJSON(&User)
 		if err1 != nil {
-			c.JSON(http.StatusOK, gin.H{
+			c.JSON(http.StatusBadRequest, gin.H{
 				"status": "failure",
-				"cause":  err1.Error(),
+				"cause":  "JSON request body is malformed",
 			})
 			return
 		}
 
+		isVerified, isExpired, isMatch, err2 := database.VerifyEmail(db, emailId, User.SecretCode)
+		if err2 != nil {
+			c.JSON(http.StatusOK, gin.H{
+				"status": "failure",
+				"cause":  err2.Error(),
+			})
+			return
+		}
+
+		if isVerified {
+			c.JSON(http.StatusOK, gin.H{
+				"status":  "success",
+				"message": "Email has already been verified before",
+			})
+			return
+		}
+
+		// Check whether the secret code is expired
 		if isExpired {
 			c.JSON(http.StatusForbidden, gin.H{
 				"status": "failure",
@@ -201,21 +223,8 @@ func VerifyEmail(db *sql.DB) func(c *gin.Context) {
 			return
 		}
 
-		var User struct {
-			SecretCode string `json:"secretcode" binding:"required"`
-		}
-
-		err2 := c.ShouldBindJSON(&User)
-		if err2 != nil {
-			c.JSON(http.StatusBadRequest, gin.H{
-				"status": "failure",
-				"cause":  "JSON request body is malformed",
-			})
-			return
-		}
-
 		// Check whether the secret code in the request match with the secret code in the database
-		if storedSecretCode != User.SecretCode {
+		if !isMatch {
 			c.JSON(http.StatusUnauthorized, gin.H{
 				"status": "failure",
 				"cause":  "Secret code does not match",
@@ -224,7 +233,8 @@ func VerifyEmail(db *sql.DB) func(c *gin.Context) {
 		}
 
 		c.JSON(http.StatusOK, gin.H{
-			"status": "success",
+			"status":  "success",
+			"message": "Email has been verified successfully",
 		})
 	}
 }

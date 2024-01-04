@@ -207,3 +207,18 @@ func GetSecretCode(db *sql.DB, emailid int) (string, bool, error) {
 
 	return secretCode, time.Now().After(expiredAt), nil
 }
+
+// Verify email if valid returning whether the email already verified, secret code expired, and secret code does not match
+func VerifyEmail(db *sql.DB, emailid int, secretCode string) (bool, bool, bool, error) {
+	sql_statement := `
+	CALL verify_email($1, $2, $3, $4, $5);
+	`
+
+	var isVerified, isExpired, isMatch bool
+	err := db.QueryRow(sql_statement, emailid, secretCode, &isVerified, &isExpired, &isMatch).Scan(&isVerified, &isExpired, &isMatch)
+	if err != nil {
+		panic(err)
+	}
+
+	return isVerified, isExpired, isMatch, nil
+}
