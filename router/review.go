@@ -28,13 +28,13 @@ func PostReview(db *sql.DB) func(c *gin.Context) {
 		var Review struct {
 			UserId 				int			`json:"user_id" binding:"required"`
 			Workload  		string	`json:"workload" binding:"required"`
-			ExpectedGrade string 	`json:"expected_grade" binding:"required"`
-			ActualGrade   string  `json:"actual_grade" binding:"required"`
+			ExpectedGrade string 	`json:"expected_grade"`
+			ActualGrade   string  `json:"actual_grade"`
 			Difficulty		string	`json:"difficulty" binding:"required"`
 			SemesterTaken	string	`json:"semester_taken" binding:"required"`
-			Lecturer			string	`json:"lecturer" binding:"required"`
+			Lecturer			string	`json:"lecturer"`
 			Content				string	`json:"content" binding:"required"`
-			Suggestion		string	`json:"suggestion" binding:"required"`
+			Suggestion		string	`json:"suggestion"`
 		}
 		bodyErr := c.ShouldBindJSON(&Review)
 		if bodyErr != nil {
@@ -118,14 +118,14 @@ func EditReviewByModuleAndUser(db *sql.DB) func(c *gin.Context) {
 		}
 
 		var EditedReview struct {
-			Workload  		*int		`json:"workload" binding:"required"`
-			ExpectedGrade *string `json:"expected_grade" binding:"required"`
-			ActualGrade   *string `json:"actual_grade" binding:"required"`
-			Difficulty		*int		`json:"difficulty" binding:"required"`
-			SemesterTaken	*string	`json:"semester_taken" binding:"required"`
-			Lecturer			*string	`json:"lecturer" binding:"required"`
-			Content				*string	`json:"content" binding:"required"`
-			Suggestion		*string	`json:"suggestion" binding:"required"`
+			Workload  		*int		`json:"workload"`
+			ExpectedGrade *string `json:"expected_grade"`
+			ActualGrade   *string `json:"actual_grade"`
+			Difficulty		*int		`json:"difficulty"`
+			SemesterTaken	*string	`json:"semester_taken"`
+			Lecturer			*string	`json:"lecturer"`
+			Content				*string	`json:"content"`
+			Suggestion		*string	`json:"suggestion"`
 		}
 
 		bodyErr := c.ShouldBindJSON(&EditedReview)
