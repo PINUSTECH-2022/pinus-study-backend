@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"regexp"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
@@ -170,4 +171,60 @@ func makeVerification(db *sql.DB, userid int, email string, username string) err
 	}
 
 	return nil
+}
+
+func VerifyEmail(db *sql.DB) func(c *gin.Context) {
+	return func(c *gin.Context) {
+		emailId, err := strconv.Atoi(c.Param("emailid"))
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"status": "failure",
+				"cause":  "Email id is malformed",
+			})
+			return
+		}
+
+		storedSecretCode, isExpired, err1 := database.GetSecretCode(db, emailId)
+		if err1 != nil {
+			c.JSON(http.StatusOK, gin.H{
+				"status": "failure",
+				"cause":  err1.Error(),
+			})
+			return
+		}
+
+		if isExpired {
+			c.JSON(http.StatusForbidden, gin.H{
+				"status": "failure",
+				"cause":  "Verification link is expired",
+			})
+			return
+		}
+
+		var User struct {
+			SecretCode string `json:"secretcode" binding:"required"`
+		}
+
+		err2 := c.ShouldBindJSON(&User)
+		if err2 != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"status": "failure",
+				"cause":  "JSON request body is malformed",
+			})
+			return
+		}
+
+		// Check whether the secret code in the request match with the secret code in the database
+		if storedSecretCode != User.SecretCode {
+			c.JSON(http.StatusUnauthorized, gin.H{
+				"status": "failure",
+				"cause":  "Secret code does not match",
+			})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{
+			"status": "success",
+		})
+	}
 }

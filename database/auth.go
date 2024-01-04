@@ -8,6 +8,7 @@ import (
 	"errors"
 	"example/web-service-gin/token"
 	"fmt"
+	"time"
 
 	_ "github.com/lib/pq"
 )
@@ -170,6 +171,7 @@ func storeUserIdAndJWT(db *sql.DB, userid int, token string) error {
 	return nil
 }
 
+// Store email verification secret code returning the row id
 func StoreSecretCode(db *sql.DB, userid int, email string, secretCode string) (int, error) {
 	sql_statement := `
 	INSERT INTO Email_verifications (id, user_id, email, secret_code) 
@@ -185,4 +187,23 @@ func StoreSecretCode(db *sql.DB, userid int, email string, secretCode string) (i
 		panic(err)
 	}
 	return id, nil
+}
+
+// Get email verification's secret code and whether it is expired
+func GetSecretCode(db *sql.DB, emailid int) (string, bool, error) {
+	sql_statement := `
+	SELECT secret_code, expired_at
+	FROM email_verifications
+	WHERE id = $1;
+	`
+
+	var secretCode string
+	var expiredAt time.Time
+
+	err := db.QueryRow(sql_statement, emailid).Scan(&secretCode, &expiredAt)
+	if err != nil {
+		panic(err)
+	}
+
+	return secretCode, time.Now().After(expiredAt), nil
 }
