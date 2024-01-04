@@ -5,13 +5,14 @@ import (
 	"example/web-service-gin/database"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 )
 
 func GetReviewByModule(db *sql.DB) func(c *gin.Context) {
 	return func(c *gin.Context) {
-		moduleId := c.Param("moduleid")
+		moduleId := strings.ToUpper(c.Param("moduleid"))
 
 		review := database.GetReviewByModule(db, moduleId)
 		c.JSON(http.StatusOK, gin.H{
@@ -22,14 +23,14 @@ func GetReviewByModule(db *sql.DB) func(c *gin.Context) {
 
 func PostReview(db *sql.DB) func(c *gin.Context) {
 	return func(c *gin.Context) {
-		moduleId := c.Param("moduleid")
+		moduleId := strings.ToUpper(c.Param("moduleid"))
 
 		var Review struct {
 			UserId 				int			`json:"user_id" binding:"required"`
-			Workload  		int			`json:"workload" binding:"required"`
+			Workload  		string	`json:"workload" binding:"required"`
 			ExpectedGrade string 	`json:"expected_grade" binding:"required"`
 			ActualGrade   string  `json:"actual_grade" binding:"required"`
-			Difficulty		int			`json:"difficulty" binding:"required"`
+			Difficulty		string	`json:"difficulty" binding:"required"`
 			SemesterTaken	string	`json:"semester_taken" binding:"required"`
 			Lecturer			string	`json:"lecturer" binding:"required"`
 			Content				string	`json:"content" binding:"required"`
@@ -44,8 +45,26 @@ func PostReview(db *sql.DB) func(c *gin.Context) {
 			return
 		}
 
-		err := database.PostReview(db, moduleId, Review.UserId, Review.Workload, 
-			Review.ExpectedGrade, Review.ActualGrade, Review.Difficulty, Review.SemesterTaken, 
+		workload, convErr := strconv.Atoi(Review.Workload)
+		if convErr != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"status": "failure",
+				"cause":  "Workload is malformed",
+			})
+			return
+		}
+
+		difficulty, convErr := strconv.Atoi(Review.Difficulty)
+		if convErr != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"status": "failure",
+				"cause":  "Difficulty is malformed",
+			})
+			return
+		}
+
+		err := database.PostReview(db, moduleId, Review.UserId, workload, 
+			Review.ExpectedGrade, Review.ActualGrade, difficulty, Review.SemesterTaken, 
 			Review.Lecturer, Review.Content, Review.Suggestion)
 		if err != nil {
 			c.JSON(http.StatusOK, gin.H{
@@ -63,7 +82,7 @@ func PostReview(db *sql.DB) func(c *gin.Context) {
 
 func GetReviewByModuleAndUser(db *sql.DB) func(c *gin.Context) {
 	return func(c *gin.Context) {
-		moduleId := c.Param("moduleid")
+		moduleId := strings.ToUpper(c.Param("moduleid"))
 		userId, convErr := strconv.Atoi(c.Param("userid"))
 		if convErr != nil {
 			c.JSON(http.StatusBadRequest, gin.H{
@@ -88,7 +107,7 @@ func GetReviewByModuleAndUser(db *sql.DB) func(c *gin.Context) {
 
 func EditReviewByModuleAndUser(db *sql.DB) func(c *gin.Context) {
 	return func(c *gin.Context) {
-		moduleId := c.Param("moduleid")
+		moduleId := strings.ToUpper(c.Param("moduleid"))
 		userId, convErr := strconv.Atoi(c.Param("userid"))
 		if convErr != nil {
 			c.JSON(http.StatusBadRequest, gin.H{
@@ -139,7 +158,7 @@ func EditReviewByModuleAndUser(db *sql.DB) func(c *gin.Context) {
 
 func DeleteReviewByModuleAndUser(db *sql.DB) func(c *gin.Context) {
 	return func(c *gin.Context) {
-		moduleId := c.Param("moduleid")
+		moduleId := strings.ToUpper(c.Param("moduleid"))
 		userId, convErr := strconv.Atoi(c.Param("userid"))
 		if convErr != nil {
 			c.JSON(http.StatusBadRequest, gin.H{
