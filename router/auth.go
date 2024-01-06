@@ -54,7 +54,17 @@ func SignUp(db *sql.DB) func(c *gin.Context) {
 			return
 		}
 
-		if !database.IsEmailAvailable(db, User.Email) {
+		secretCode := util.RandomString(32)
+		userId, emailId, isEmailExist, isUsernameExist, err1 := database.SignUp(db, User.Email, User.Username, User.Password, secretCode)
+		if err1 != nil {
+			c.JSON(http.StatusOK, gin.H{
+				"status": "failure",
+				"cause":  err1.Error(),
+			})
+			return
+		}
+
+		if isEmailExist {
 			c.JSON(http.StatusOK, gin.H{
 				"status": "failure",
 				"cause":  "email is already taken",
@@ -62,7 +72,7 @@ func SignUp(db *sql.DB) func(c *gin.Context) {
 			return
 		}
 
-		if !database.IsUsernameAvailable(db, User.Username) {
+		if isUsernameExist {
 			c.JSON(http.StatusOK, gin.H{
 				"status": "failure",
 				"cause":  "username is already taken",
@@ -70,24 +80,7 @@ func SignUp(db *sql.DB) func(c *gin.Context) {
 			return
 		}
 
-		userId, err2 := database.SignUp(db, User.Email, User.Username, User.Password)
-		if err2 != nil {
-			c.JSON(http.StatusOK, gin.H{
-				"status": "failure",
-				"cause":  err2.Error(),
-			})
-			return
-		}
-
-		err3 := makeVerification(db, userId, User.Email, User.Username)
-
-		if err3 != nil {
-			c.JSON(http.StatusOK, gin.H{
-				"status": "failure",
-				"cause":  err3.Error(),
-			})
-			return
-		}
+		makeVerification(userId, emailId, User.Email, User.Username, secretCode)
 
 		c.JSON(http.StatusOK, gin.H{
 			"status": "success",
@@ -140,7 +133,7 @@ func LogIn(db *sql.DB) func(c *gin.Context) {
 	}
 }
 
-func makeVerification(db *sql.DB, userid int, email string, username string) error {
+func makeVerification(userid int, emailid int, email string, username string, secretCode string) error {
 	err := godotenv.Load(".env")
 
 	if err != nil {
@@ -152,14 +145,8 @@ func makeVerification(db *sql.DB, userid int, email string, username string) err
 	emailSenderAddress := os.Getenv("EMAIL_SENDER_ADDRESS")
 	emailSenderPassword := os.Getenv("EMAIL_SENDER_PASSWORD")
 
-	secretCode := util.RandomString(32)
-	id, err := database.StoreSecretCode(db, userid, email, secretCode)
-	if err != nil {
-		return err
-	}
-
 	subject := "Welcome to PINUS STUDY!"
-	verifyUrl := fmt.Sprintf("%s/verify_email?email_id=%d&secret_code=%s", frontendUrl, id, secretCode)
+	verifyUrl := fmt.Sprintf("%s/verify_email?email_id=%d&secret_code=%s", frontendUrl, emailid, secretCode)
 	content := fmt.Sprintf(`Dear Pinusian, <br/>
 	There has been a request to register the address %s with the user %s on the PINUS STUDY. 
 	In order to complete the address registration you need to go to the following link in a web browser: <a href = "%s">%s</a> <br/>
