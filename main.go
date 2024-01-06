@@ -28,7 +28,8 @@ func main() {
 
 	r.POST("/signup", router.SignUp(db))
 
-	r.POST("/verify_email/:emailid", router.VerifyEmail(db))
+	r.POST("/verify_email/:userid", router.MakeVerification(db))
+	r.GET("/verify_email/:emailid", router.VerifyEmail(db))
 
 	r.POST("/me", middlewares.JwtAuthMiddleware(), router.GetPersonalInfo(db))
 

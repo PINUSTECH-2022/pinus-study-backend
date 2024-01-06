@@ -80,7 +80,14 @@ func SignUp(db *sql.DB) func(c *gin.Context) {
 			return
 		}
 
-		makeVerification(userId, emailId, User.Email, User.Username, secretCode)
+		err2 := sendVerification(userId, emailId, User.Email, User.Username, secretCode)
+		if err2 != nil {
+			c.JSON(http.StatusOK, gin.H{
+				"status": "failure",
+				"cause":  "verification link can not be sent via email",
+			})
+			return
+		}
 
 		c.JSON(http.StatusOK, gin.H{
 			"status": "success",
@@ -133,7 +140,8 @@ func LogIn(db *sql.DB) func(c *gin.Context) {
 	}
 }
 
-func makeVerification(userid int, emailid int, email string, username string, secretCode string) error {
+// Sends the email verification link to the user's email
+func sendVerification(userid int, emailid int, email string, username string, secretCode string) error {
 	err := godotenv.Load(".env")
 
 	if err != nil {
@@ -223,6 +231,61 @@ func VerifyEmail(db *sql.DB) func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
 			"status":  "success",
 			"message": "Email has been verified successfully",
+		})
+	}
+}
+
+// Makes the email verification (used when the user ask to make a new verification)
+func MakeVerification(db *sql.DB) func(c *gin.Context) {
+	return func(c *gin.Context) {
+		userId, err := strconv.Atoi(c.Param("userid"))
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"status": "failure",
+				"cause":  "userid is malformed",
+			})
+			return
+		}
+
+		secretCode := util.RandomString(32)
+
+		isExist, emailId, email, username, isVerified, err1 := database.StoreSecretCode(db, userId, secretCode)
+		if err1 != nil {
+			c.JSON(http.StatusOK, gin.H{
+				"status": "failure",
+				"cause":  err1.Error(),
+			})
+			return
+		}
+
+		if !isExist {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"status": "failure",
+				"cause":  "user id not exist",
+			})
+			return
+		}
+
+		if isVerified {
+			c.JSON(http.StatusOK, gin.H{
+				"status": "failure",
+				"cause":  "email has been verified",
+			})
+			return
+		}
+
+		err2 := sendVerification(userId, emailId, email, username, secretCode)
+		if err2 != nil {
+			c.JSON(http.StatusOK, gin.H{
+				"status": "failure",
+				"cause":  "verification link can not be sent via email",
+			})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{
+			"status": "success",
+			"id":     userId,
 		})
 	}
 }

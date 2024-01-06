@@ -188,22 +188,24 @@ func storeUserIdAndJWT(db *sql.DB, userid int, token string) error {
 	return nil
 }
 
-// Store email verification secret code returning the row id
-func StoreSecretCode(db *sql.DB, userid int, email string, secretCode string) (int, error) {
+// Stores email verification secret code returning whether the userid exist, the email id, the email, the username, and whether the account has been verified
+func StoreSecretCode(db *sql.DB, userid int, secretCode string) (bool, int, string, string, bool, error) {
 	sql_statement := `
-	INSERT INTO Email_verifications (id, user_id, email, secret_code) 
-	VALUES ((SELECT COUNT(*) FROM Email_verifications) + 1, $1, $2, $3)
-	RETURNING id;
+	CALL make_verification($1, $2, 
+	$3, $4, $5, $6, $7);
 	`
 
 	var id int
+	var email, username string
+	var isExist, isVerified bool
 
-	err := db.QueryRow(sql_statement, userid, email, secretCode).Scan(&id)
+	err := db.QueryRow(sql_statement, userid, secretCode, &isExist, &id, &email, &username, &isVerified).
+		Scan(&isExist, &id, &email, &username, &isVerified)
 
 	if err != nil {
 		panic(err)
 	}
-	return id, nil
+	return isExist, id, email, username, isVerified, nil
 }
 
 // Get email verification's secret code and whether it is expired
