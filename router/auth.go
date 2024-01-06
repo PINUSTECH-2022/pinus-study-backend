@@ -70,7 +70,7 @@ func SignUp(db *sql.DB) func(c *gin.Context) {
 			return
 		}
 
-		userId, token, err2 := database.SignUp(db, User.Email, User.Username, User.Password)
+		userId, err2 := database.SignUp(db, User.Email, User.Username, User.Password)
 		if err2 != nil {
 			c.JSON(http.StatusOK, gin.H{
 				"status": "failure",
@@ -91,7 +91,6 @@ func SignUp(db *sql.DB) func(c *gin.Context) {
 
 		c.JSON(http.StatusOK, gin.H{
 			"status": "success",
-			"token":  token,
 			"userid": userId,
 		})
 	}
@@ -112,7 +111,7 @@ func LogIn(db *sql.DB) func(c *gin.Context) {
 			return
 		}
 
-		success, userid, token, err2 := database.LogIn(db, User.NameOrEmail, User.Password)
+		success, isVerified, userid, token, err2 := database.LogIn(db, User.NameOrEmail, User.Password)
 
 		if err2 != nil {
 			c.JSON(http.StatusOK, gin.H{
@@ -125,6 +124,8 @@ func LogIn(db *sql.DB) func(c *gin.Context) {
 		var status string
 		if success {
 			status = "success"
+		} else if !isVerified {
+			status = "failure due to unverified email"
 		} else {
 			status = "failure due to wrong password"
 			token = ""

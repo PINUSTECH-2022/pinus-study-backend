@@ -60,7 +60,7 @@ func doPasswordsMatch(hashedPassword, currPassword string, salt []byte) bool {
 	return hashedPassword == currPasswordHash
 }
 
-func SignUp(db *sql.DB, email string, username string, password string) (int, string, error) {
+func SignUp(db *sql.DB, email string, username string, password string) (int, error) {
 	salt := generateRandomSalt()
 	saltString := hex.EncodeToString(salt)
 	encryptedPassword := hashPassword(password, salt)
@@ -68,38 +68,39 @@ func SignUp(db *sql.DB, email string, username string, password string) (int, st
 	nexId := getUserId(db)
 	_, err := db.Exec("INSERT INTO Users (id, email, username, password, salt) VALUES ($1, $2, $3, $4, $5)", nexId, email, username, encryptedPassword, saltString)
 	if err != nil {
-		return -1, "", err
+		return -1, err
 	}
 
-	token, err2 := token.GenerateToken(nexId)
-	if err2 != nil {
-		return -1, "", err2
-	}
-
-	return nexId, token, nil
+	return nexId, nil
 }
 
-func LogIn(db *sql.DB, nameOrEmail string, password string) (bool, int, string, error) {
+func LogIn(db *sql.DB, nameOrEmail string, password string) (bool, bool, int, string, error) {
 	var (
 		encryptedPassword string
 		saltString        string
 		uid               int
+		isVerified        bool
 	)
 
-	rows, err := db.Query("SELECT password, salt, id FROM Users WHERE email = $1 OR username = $1", nameOrEmail)
+	rows, err := db.Query("SELECT password, salt, id, is_verified FROM Users WHERE email = $1 OR username = $1", nameOrEmail)
 	if rows == nil {
-		return false, -1, "wrong username or password", nil
+		return false, false, -1, "wrong username or password", nil
 	}
 	defer rows.Close()
 
 	for rows.Next() {
-		rows.Scan(&encryptedPassword, &saltString, &uid)
+		rows.Scan(&encryptedPassword, &saltString, &uid, &isVerified)
 		break
 	}
 
 	if err != nil {
 		fmt.Println("Err here", err.Error())
 		panic(err)
+	}
+
+	// Check whether the email has been verified
+	if !isVerified {
+		return false, isVerified, -1, "", nil
 	}
 
 	salt, err2 := hex.DecodeString(saltString)
@@ -109,7 +110,7 @@ func LogIn(db *sql.DB, nameOrEmail string, password string) (bool, int, string, 
 
 	success := doPasswordsMatch(encryptedPassword, password, salt)
 	if !success {
-		return success, -1, "", nil
+		return success, isVerified, -1, "", nil
 	}
 
 	token, err3 := token.GenerateToken(uid)
@@ -127,7 +128,7 @@ func LogIn(db *sql.DB, nameOrEmail string, password string) (bool, int, string, 
 		panic(err)
 	}
 
-	return success, userid, token, nil
+	return success, isVerified, userid, token, nil
 }
 
 func checkToken(db *sql.DB, userId int, token string) error {
