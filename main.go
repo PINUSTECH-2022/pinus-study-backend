@@ -46,6 +46,7 @@ func main() {
 	r.DELETE("/thread/:threadid", router.DeleteThreadById(db))
 
 	r.POST("/bookmark/:threadid/:userid", router.BookmarkThread(db))
+	r.DELETE("/bookmark/:threadid/:userid", router.UnbookmarkThread(db))
 
 	r.GET("/subscribes/:moduleid", router.GetSubscribers(db))
 	r.GET("/subscribes/:moduleid/:userid", router.DoesSubscribe(db))
