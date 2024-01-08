@@ -64,3 +64,32 @@ func UnbookmarkThread(db *sql.DB) func(c *gin.Context) {
 		})
 	}
 }
+
+// Get whether a thread is being bookmarked by the user
+func GetBookmarkThread(db *sql.DB) func(c *gin.Context) {
+	return func(c *gin.Context) {
+		threadId, err := strconv.Atoi(c.Param("threadid"))
+		userId, err1 := strconv.Atoi(c.Param("userid"))
+		if err != nil || err1 != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"status": "failure",
+				"cause":  "Request body is malformed",
+			})
+			return
+		}
+
+		isBookmarked, err2 := database.GetBookmarkThread(db, threadId, userId)
+		if err2 != nil {
+			c.JSON(http.StatusOK, gin.H{
+				"status": "failure",
+				"cause":  err2.Error(),
+			})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{
+			"status":     "success",
+			"bookmarked": isBookmarked,
+		})
+	}
+}
