@@ -111,7 +111,7 @@ func LogIn(db *sql.DB) func(c *gin.Context) {
 			return
 		}
 
-		success, isVerified, userid, token, err2 := database.LogIn(db, User.NameOrEmail, User.Password)
+		success, isSignedUp, isVerified, userid, token, err2 := database.LogIn(db, User.NameOrEmail, User.Password)
 
 		if err2 != nil {
 			c.JSON(http.StatusOK, gin.H{
@@ -124,11 +124,12 @@ func LogIn(db *sql.DB) func(c *gin.Context) {
 		var status string
 		if success {
 			status = "success"
+		} else if !isSignedUp {
+			status = "username or email does not exist"
 		} else if !isVerified {
 			status = "failure due to unverified email"
 		} else {
 			status = "failure due to wrong password"
-			token = ""
 			userid = -1
 		}
 
