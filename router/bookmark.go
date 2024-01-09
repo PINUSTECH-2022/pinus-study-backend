@@ -93,3 +93,23 @@ func GetBookmarkThread(db *sql.DB) func(c *gin.Context) {
 		})
 	}
 }
+
+func GetBookmark(db *sql.DB) func(c *gin.Context) {
+	return func(c *gin.Context) {
+		userId, err := strconv.Atoi(c.Param("userid"))
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"status": "failure",
+				"cause":  "Request body is malformed",
+			})
+			return
+		}
+
+		bookmarkedThreads := database.GetBookmark(db, userId)
+
+		c.JSON(http.StatusOK, gin.H{
+			"status":     "success",
+			"threads": bookmarkedThreads,
+		})
+	}
+}

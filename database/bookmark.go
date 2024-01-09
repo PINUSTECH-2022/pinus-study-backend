@@ -37,3 +37,28 @@ func GetBookmarkThread(db *sql.DB, threadId int, userId int) (bool, error) {
 	err := db.QueryRow(sql_statement, threadId, userId).Scan(&isBookmarked)
 	return isBookmarked, err
 }
+
+// Get the list of threads bookmarked by the user
+func GetBookmark(db *sql.DB, userId int) []Thread {
+	sql_statement := `
+	SELECT thread_id FROM bookmark_threads WHERE user_id = $1;
+	`
+	rows, err := db.Query(sql_statement, userId)
+	if err != nil {
+		panic(err)
+	}
+	defer rows.Close()
+
+	bookmarkedThreads := []Thread{}
+	for rows.Next() {
+		var threadid string
+		rows.Scan(&threadid)
+		bookmarkedThreads = append(bookmarkedThreads, GetThreadById(db, threadid))
+	}
+
+	if rows.Err() != nil {
+		panic(err)
+	}
+
+	return bookmarkedThreads
+}

@@ -45,6 +45,7 @@ func main() {
 	r.POST("/thread/:threadid", middlewares.JwtAuthMiddleware(), router.PostComment(db))
 	r.DELETE("/thread/:threadid", router.DeleteThreadById(db))
 
+	r.GET("/bookmark/user/:userid", router.GetBookmark(db))
 	r.GET("/bookmark/:threadid/:userid", router.GetBookmarkThread(db))
 	r.POST("/bookmark/:threadid/:userid", router.BookmarkThread(db))
 	r.DELETE("/bookmark/:threadid/:userid", router.UnbookmarkThread(db))
