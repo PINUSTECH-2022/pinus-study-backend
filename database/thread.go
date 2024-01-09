@@ -19,6 +19,7 @@ type Thread struct {
 	ModuleId      string
 	LikesCount    int
 	DislikesCount int
+	CommentsCount int
 	IsDeleted     bool
 	Comments      []int
 	Tags          []int

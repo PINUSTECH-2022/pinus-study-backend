@@ -109,7 +109,7 @@ func GetModuleByModuleId(db *sql.DB, moduleid string) Module {
 	}
 
 	query = fmt.Sprintf(`
-	SELECT T.id, T.title, T.content, T.moduleid, T.authorid, T.timestamp, T.is_deleted
+	SELECT T.id, T.title, T.content, T.moduleid, T.authorid, T.timestamp, T.is_deleted, T.likes_count, T.dislikes_count, T.comments_count
 	FROM Modules AS M 
 	LEFT JOIN Threads AS T ON M.id = T.moduleid 
 	LEFT JOIN Subscribes AS S ON S.moduleid = M.id 
@@ -126,7 +126,8 @@ func GetModuleByModuleId(db *sql.DB, moduleid string) Module {
 
 	for rows.Next() {
 		var thread Thread
-		err := rows.Scan(&thread.Id, &thread.Title, &thread.Content, &thread.ModuleId, &thread.AuthorId, &thread.Timestamp, &thread.IsDeleted)
+		err := rows.Scan(&thread.Id, &thread.Title, &thread.Content, &thread.ModuleId, &thread.AuthorId,
+			&thread.Timestamp, &thread.IsDeleted, &thread.LikesCount, &thread.DislikesCount, &thread.CommentsCount)
 		if err != nil {
 			break
 		}
