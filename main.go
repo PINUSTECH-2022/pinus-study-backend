@@ -58,7 +58,7 @@ func main() {
 	r.GET("/review/:moduleid", router.GetReviewByModule(db))
 	r.POST("/review/:moduleid", middlewares.JwtAuthMiddleware(), router.PostReview(db))
 	r.GET("/review/:moduleid/:userid", router.GetReviewByModuleAndUser(db))
-	r.PUT("/review/:moduleid/:userid", router.EditReviewByModuleAndUser(db))
+	r.PUT("/review/:moduleid/:userid", middlewares.JwtAuthMiddleware(), router.EditReviewByModuleAndUser(db))
 	r.DELETE("/review/:moduleid/:userid", middlewares.JwtAuthMiddleware(), router.DeleteReviewByModuleAndUser(db))
 	r.GET("/review/workload", router.GetWorkload(db))
 	r.GET("/review/grade", router.GetGrade(db))
