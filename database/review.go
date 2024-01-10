@@ -4,24 +4,23 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"time"
 
 	_ "github.com/lib/pq"
 )
 
 type Review struct {
-	ModuleId			string
-	UserId	  		int
-	Username			string
-	Timestamp			string
-	Workload			int
-	ExpectedGrade	string
-	ActualGrade		string
-	Difficulty		int
-	SemesterTaken	string
-	Lecturer			string
-	Content				string
-	Suggestion		string
+	ModuleId      string
+	UserId        int
+	Username      string
+	Timestamp     string
+	Workload      int
+	ExpectedGrade string
+	ActualGrade   string
+	Difficulty    int
+	SemesterTaken string
+	Lecturer      string
+	Content       string
+	Suggestion    string
 }
 
 func GetReviewByModule(db *sql.DB, moduleId string) []Review {
@@ -29,7 +28,7 @@ func GetReviewByModule(db *sql.DB, moduleId string) []Review {
 		R.expectedGrade, R.actualGrade, R.difficulty, R.semesterTaken, R.lecturer, 
 		R.content, R.suggestion, U.username
 		FROM Reviews AS R, Users AS U
-		WHERE R.moduleId = $1 AND R.userId = U.id AND R.is_deleted = false`, 
+		WHERE R.moduleId = $1 AND R.userId = U.id AND R.is_deleted = false`,
 		moduleId)
 	if err != nil {
 		panic(err)
@@ -58,7 +57,7 @@ func GetReviewByModuleAndUser(db *sql.DB, moduleId string, userId int) (bool, Re
 		R.expectedGrade, R.actualGrade, R.difficulty, R.semesterTaken, R.lecturer, 
 		R.content, R.suggestion, U.username
 		FROM Reviews AS R, Users AS U
-		WHERE R.moduleId = $1 AND U.id = $2 AND R.userId = U.id AND R.is_deleted = false`, 
+		WHERE R.moduleId = $1 AND U.id = $2 AND R.userId = U.id AND R.is_deleted = false`,
 		moduleId, userId)
 	if err != nil {
 		panic(err)
@@ -87,7 +86,7 @@ func GetDeletedReviewByModuleAndUser(db *sql.DB, moduleId string, userId int) (b
 		R.expectedGrade, R.actualGrade, R.difficulty, R.semesterTaken, R.lecturer, 
 		R.content, R.suggestion, U.username
 		FROM Reviews AS R, Users AS U
-		WHERE R.moduleId = $1 AND U.id = $2 AND R.userId = U.id AND R.is_deleted = true`, 
+		WHERE R.moduleId = $1 AND U.id = $2 AND R.userId = U.id AND R.is_deleted = true`,
 		moduleId, userId)
 	if err != nil {
 		panic(err)
@@ -111,7 +110,7 @@ func GetDeletedReviewByModuleAndUser(db *sql.DB, moduleId string, userId int) (b
 	return isReviewDeleted, review
 }
 
-func PostReview(db *sql.DB, moduleId string, userId int, workload int, expectedGrade string, 
+func PostReview(db *sql.DB, moduleId string, userId int, workload int, expectedGrade string,
 	actualGrade string, difficulty int, semesterTaken string, lecturer string, content string,
 	suggestion string) error {
 
@@ -134,17 +133,16 @@ func PostReview(db *sql.DB, moduleId string, userId int, workload int, expectedG
 	if isDeleted {
 		_, err = tx.Exec(`DELETE FROM Reviews
 		WHERE moduleId = $1 AND userId = $2`,
-		moduleId, userId)
+			moduleId, userId)
 		if err != nil {
 			panic(err)
 		}
 	}
 
 	_, err = tx.Exec(`INSERT INTO Reviews (moduleId, userId, workload, expectedGrade, actualGrade, 
-		difficulty, semesterTaken, lecturer, content, suggestion, timestamp) 
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`, moduleId, userId, workload,
-		expectedGrade, actualGrade, difficulty, semesterTaken, lecturer, content, suggestion,
-	  time.Now().Format("2006-01-02 15:04:05"))
+		difficulty, semesterTaken, lecturer, content, suggestion) 
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`, moduleId, userId, workload,
+		expectedGrade, actualGrade, difficulty, semesterTaken, lecturer, content, suggestion)
 	if err != nil {
 		fmt.Println("Error in inserting review into db: ", err.Error())
 		return errors.New("Review data is malformed.")
@@ -160,8 +158,8 @@ func PostReview(db *sql.DB, moduleId string, userId int, workload int, expectedG
 	return nil
 }
 
-func EditReviewByModuleAndUser(db *sql.DB, moduleId string, userId int, workload *int, 
-	expectedGrade *string, actualGrade *string, difficulty *int, semesterTaken *string, 
+func EditReviewByModuleAndUser(db *sql.DB, moduleId string, userId int, workload *int,
+	expectedGrade *string, actualGrade *string, difficulty *int, semesterTaken *string,
 	lecturer *string, content *string, suggestion *string) error {
 
 	exist, _ := GetReviewByModuleAndUser(db, moduleId, userId)
@@ -182,7 +180,7 @@ func EditReviewByModuleAndUser(db *sql.DB, moduleId string, userId int, workload
 		semesterTaken = COALESCE($5, semesterTaken), lecturer = COALESCE($6, lecturer), 
 		content = COALESCE($7, content), suggestion = COALESCE($8, suggestion)
 		WHERE moduleId = $9 AND userId = $10 AND is_deleted = false`,
-		workload, expectedGrade, actualGrade, difficulty, semesterTaken, lecturer, content, 
+		workload, expectedGrade, actualGrade, difficulty, semesterTaken, lecturer, content,
 		suggestion, moduleId, userId)
 
 	if err != nil {
