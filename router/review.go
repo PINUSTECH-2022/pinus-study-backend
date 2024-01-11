@@ -26,15 +26,15 @@ func PostReview(db *sql.DB) func(c *gin.Context) {
 		moduleId := strings.ToUpper(c.Param("moduleid"))
 
 		var Review struct {
-			UserId 				int			`json:"user_id" binding:"required"`
-			Workload  		string	`json:"workload" binding:"required"`
-			ExpectedGrade string 	`json:"expected_grade"`
-			ActualGrade   string  `json:"actual_grade"`
-			Difficulty		string	`json:"difficulty" binding:"required"`
-			SemesterTaken	string	`json:"semester_taken" binding:"required"`
-			Lecturer			string	`json:"lecturer"`
-			Content				string	`json:"content" binding:"required"`
-			Suggestion		string	`json:"suggestion"`
+			UserId        int    `json:"user_id" binding:"required"`
+			Workload      string `json:"workload" binding:"required"`
+			ExpectedGrade string `json:"expected_grade"`
+			ActualGrade   string `json:"actual_grade"`
+			Difficulty    string `json:"difficulty" binding:"required"`
+			SemesterTaken string `json:"semester_taken" binding:"required"`
+			Lecturer      string `json:"lecturer"`
+			Content       string `json:"content" binding:"required"`
+			Suggestion    string `json:"suggestion"`
 		}
 		bodyErr := c.ShouldBindJSON(&Review)
 		if bodyErr != nil {
@@ -63,8 +63,8 @@ func PostReview(db *sql.DB) func(c *gin.Context) {
 			return
 		}
 
-		err := database.PostReview(db, moduleId, Review.UserId, workload, 
-			Review.ExpectedGrade, Review.ActualGrade, difficulty, Review.SemesterTaken, 
+		err := database.PostReview(db, moduleId, Review.UserId, workload,
+			Review.ExpectedGrade, Review.ActualGrade, difficulty, Review.SemesterTaken,
 			Review.Lecturer, Review.Content, Review.Suggestion)
 		if err != nil {
 			c.JSON(http.StatusOK, gin.H{
@@ -118,14 +118,14 @@ func EditReviewByModuleAndUser(db *sql.DB) func(c *gin.Context) {
 		}
 
 		var EditedReview struct {
-			Workload  		*int		`json:"workload"`
+			Workload      *int    `json:"workload"`
 			ExpectedGrade *string `json:"expected_grade"`
 			ActualGrade   *string `json:"actual_grade"`
-			Difficulty		*int		`json:"difficulty"`
-			SemesterTaken	*string	`json:"semester_taken"`
-			Lecturer			*string	`json:"lecturer"`
-			Content				*string	`json:"content"`
-			Suggestion		*string	`json:"suggestion"`
+			Difficulty    *int    `json:"difficulty"`
+			SemesterTaken *string `json:"semester_taken"`
+			Lecturer      *string `json:"lecturer"`
+			Content       *string `json:"content"`
+			Suggestion    *string `json:"suggestion"`
 		}
 
 		bodyErr := c.ShouldBindJSON(&EditedReview)
@@ -140,7 +140,7 @@ func EditReviewByModuleAndUser(db *sql.DB) func(c *gin.Context) {
 
 		err := database.EditReviewByModuleAndUser(db, moduleId, userId, EditedReview.Workload,
 			EditedReview.ExpectedGrade, EditedReview.ActualGrade, EditedReview.Difficulty,
-			EditedReview.SemesterTaken, EditedReview.Lecturer, EditedReview.Content, 
+			EditedReview.SemesterTaken, EditedReview.Lecturer, EditedReview.Content,
 			EditedReview.Suggestion)
 		if err != nil {
 			c.JSON(http.StatusOK, gin.H{
@@ -187,7 +187,7 @@ func DeleteReviewByModuleAndUser(db *sql.DB) func(c *gin.Context) {
 func GetWorkload(db *sql.DB) func(c *gin.Context) {
 	return func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
-			"workload": []int{0, 1, 2, 3, 4, 5},
+			"workload": []int{1, 2, 3, 4, 5},
 		})
 	}
 }
@@ -203,7 +203,7 @@ func GetGrade(db *sql.DB) func(c *gin.Context) {
 func GetDifficulty(db *sql.DB) func(c *gin.Context) {
 	return func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
-			"difficulty": []int{0, 1, 2, 3, 4, 5},
+			"difficulty": []int{1, 2, 3, 4, 5},
 		})
 	}
 }
