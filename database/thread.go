@@ -19,6 +19,7 @@ type Thread struct {
 	ModuleId      string
 	LikesCount    int
 	DislikesCount int
+	CommentsCount int
 	IsDeleted     bool
 	Comments      []int
 	Tags          []int
@@ -31,13 +32,11 @@ func GetThreadById(db *sql.DB, threadid string) Thread {
 	}
 
 	query := fmt.Sprintf(`
-		SELECT T.id, T.title, T.content, T.moduleid, T.authorid, T.timestamp, T.is_deleted, 
-		(SELECT COUNT(*) FROM Likes_threads AS LT WHERE LT.threadid = T.id AND LT.state = true) AS likes_count, 
-		(SELECT COUNT(*) FROM Likes_threads AS LT WHERE LT.threadid = T.id AND LT.state = false) AS dislikes_count, U.username, C.id 
-		FROM Threads AS T 
-		JOIN Users AS U ON T.authorid = U.id 
-		LEFT JOIN Comments AS C ON C.threadid = T.id 
-		WHERE T.id = %d AND (C.parentid = 0 OR C.parentid IS NULL);`,
+	SELECT T.id, T.title, T.content, T.moduleid, T.authorid, T.timestamp, T.is_deleted,  T.likes_count, T.dislikes_count, T.comments_count, U.username, C.id 
+	FROM Threads AS T 
+	JOIN Users AS U ON T.authorid = U.id 
+	LEFT JOIN Comments AS C ON C.threadid = T.id 
+	WHERE T.id = %d AND (C.parentid = 0 OR C.parentid IS NULL);`,
 		threadidInt)
 
 	rows, err := db.Query(query)
@@ -50,7 +49,8 @@ func GetThreadById(db *sql.DB, threadid string) Thread {
 	var thread Thread
 	for rows.Next() {
 		var commentId sql.NullInt64
-		err := rows.Scan(&thread.Id, &thread.Title, &thread.Content, &thread.ModuleId, &thread.AuthorId, &thread.Timestamp, &thread.IsDeleted, &thread.LikesCount, &thread.DislikesCount, &thread.Username, &commentId)
+		err := rows.Scan(&thread.Id, &thread.Title, &thread.Content, &thread.ModuleId, &thread.AuthorId, &thread.Timestamp,
+			&thread.IsDeleted, &thread.LikesCount, &thread.DislikesCount, &thread.CommentsCount, &thread.Username, &commentId)
 		if err != nil {
 			panic(err)
 		}
