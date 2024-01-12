@@ -126,6 +126,22 @@ func getUserId(db *sql.DB) int {
 	return count + 1
 }
 
+func IsEmailAvailable(db *sql.DB, email string) bool {
+	rows, _ := db.Query("SELECT email FROM Users WHERE email = $1", email)
+	for rows.Next() {
+		return false
+	}
+	return true
+}
+
+func IsUsernameAvailable(db *sql.DB, username string) bool {
+	rows, _ := db.Query("SELECT username FROM Users WHERE username = $1", username)
+	for rows.Next() {
+		return false
+	}
+	return true
+}
+
 func getUsername(db *sql.DB, userid int) (string, error) {
 	sql_statement := `
 	SELECT u.username

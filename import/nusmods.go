@@ -6,7 +6,9 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 
+	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
 )
 
@@ -17,7 +19,14 @@ type modules struct {
 }
 
 func GetDbNusMods() *sql.DB {
-	db, err := sql.Open("postgres", "postgresql://postgres:pinustech2023@db.sdfwupgscugadsdwtkgg.supabase.co:5432/postgres")
+	err := godotenv.Load(".env")
+
+	if err != nil {
+		panic(err)
+	}
+
+	dbUri := os.Getenv("DATABASE_URI")
+	db, err := sql.Open("postgres", dbUri)
 	if err != nil {
 		panic(err)
 	}
