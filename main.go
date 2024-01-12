@@ -45,6 +45,11 @@ func main() {
 	r.POST("/thread/:threadid", middlewares.JwtAuthMiddleware(), router.PostComment(db))
 	r.DELETE("/thread/:threadid", router.DeleteThreadById(db))
 
+	r.GET("/bookmark/user/:userid", middlewares.JwtAuthMiddleware(), router.GetBookmark(db))
+	r.GET("/bookmark/:threadid/:userid", middlewares.JwtAuthMiddleware(), router.GetBookmarkThread(db))
+	r.POST("/bookmark/:threadid/:userid", middlewares.JwtAuthMiddleware(), router.BookmarkThread(db))
+	r.DELETE("/bookmark/:threadid/:userid", middlewares.JwtAuthMiddleware(), router.UnbookmarkThread(db))
+
 	r.GET("/subscribes/:moduleid", router.GetSubscribers(db))
 	r.GET("/subscribes/:moduleid/:userid", router.DoesSubscribe(db))
 	r.POST("/subscribes/:moduleid/:userid", middlewares.JwtAuthMiddleware(), router.Subscribe(db))
