@@ -55,5 +55,15 @@ func main() {
 	r.GET("/likes/comment/:commentid/:userid", router.GetLikeComment(db))
 	r.POST("/likes/comment/:commentid/:userid/:state", middlewares.JwtAuthMiddleware(), router.SetLikeComment(db))
 
+	r.GET("/review/:moduleid", router.GetReviewByModule(db))
+	r.POST("/review/:moduleid", middlewares.JwtAuthMiddleware(), router.PostReview(db))
+	r.GET("/review/:moduleid/:userid", router.GetReviewByModuleAndUser(db))
+	r.PUT("/review/:moduleid/:userid", middlewares.JwtAuthMiddleware(), router.EditReviewByModuleAndUser(db))
+	r.DELETE("/review/:moduleid/:userid", middlewares.JwtAuthMiddleware(), router.DeleteReviewByModuleAndUser(db))
+	r.GET("/review/workload", router.GetWorkload(db))
+	r.GET("/review/grade", router.GetGrade(db))
+	r.GET("/review/difficulty", router.GetDifficulty(db))
+	r.GET("/review/semester", router.GetSemester(db))
+
 	r.Run() // listen and serve on 0.0.0.0:8080 (for windows "localhost:8080")
 }

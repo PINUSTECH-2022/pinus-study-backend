@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"strings"
-	"time"
 
 	_ "github.com/lib/pq"
 )
@@ -16,6 +15,7 @@ type Module struct {
 	Desc            string
 	SubscriberCount int
 	Threads         []Thread
+	ReviewCount     int
 }
 
 func GetModules(db *sql.DB, keyword string, page int) []Module {
@@ -83,6 +83,29 @@ func getSubscriberCount(db *sql.DB, moduleid string) int {
 	return count
 }
 
+func getReviewCount(db *sql.DB, moduleid string) int {
+	rows, err := db.Query(`SELECT COUNT(*)
+		FROM Reviews AS R
+		WHERE R.moduleId = $1 AND R.is_deleted = false`,
+		moduleid)
+
+	if err != nil {
+		fmt.Println(err.Error())
+		panic(err)
+	}
+	defer rows.Close()
+
+	var count int
+	for rows.Next() {
+		err = rows.Scan(&count)
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	return count
+}
+
 func GetModuleByModuleId(db *sql.DB, moduleid string) Module {
 	query := fmt.Sprintf(`
 	SELECT M.id, M.name, M.description, COUNT(S.moduleid)
@@ -133,6 +156,8 @@ func GetModuleByModuleId(db *sql.DB, moduleid string) Module {
 		mod.Threads = append(mod.Threads, thread)
 	}
 
+	mod.ReviewCount = getReviewCount(db, moduleid)
+
 	fmt.Println(mod)
 	return mod
 }
@@ -149,7 +174,7 @@ func PostThread(db *sql.DB, authorid int, content string, title string, tags []i
 
 	newThreadID := getThreadId(tx)
 
-	_, err = tx.Exec("INSERT INTO Threads (authorid, content, id, moduleid, timestamp, title) VALUES ($1, $2, $3, $4, $5, $6)", authorid, content, newThreadID, strings.ToUpper(moduleid), time.Now().Format("2006-01-02 15:04:05"), title)
+	_, err = tx.Exec("INSERT INTO Threads (authorid, content, id, moduleid, title) VALUES ($1, $2, $3, $4, $5)", authorid, content, newThreadID, strings.ToUpper(moduleid), title)
 	if err != nil {
 		fmt.Println("Error in inserting thread into db: ", err.Error())
 		return -1, errors.New("Thread data is malformed.")
