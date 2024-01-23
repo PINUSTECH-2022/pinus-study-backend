@@ -55,7 +55,7 @@ func SignUp(db *sql.DB) func(c *gin.Context) {
 		}
 
 		secretCode := util.RandomString(32)
-		userId, emailId, isEmailExist, isUsernameExist, err1 := database.SignUp(db, User.Email, User.Username, User.Password, secretCode)
+		userId, emailId, isEmailExist, isUsernameExist, isVerified, err1 := database.SignUp(db, User.Email, User.Username, User.Password, secretCode)
 		if err1 != nil {
 			c.JSON(http.StatusOK, gin.H{
 				"status": "failure",
@@ -64,7 +64,7 @@ func SignUp(db *sql.DB) func(c *gin.Context) {
 			return
 		}
 
-		if isEmailExist {
+		if isEmailExist && isVerified {
 			c.JSON(http.StatusOK, gin.H{
 				"status": "failure",
 				"cause":  "email is already taken",
@@ -76,6 +76,15 @@ func SignUp(db *sql.DB) func(c *gin.Context) {
 			c.JSON(http.StatusOK, gin.H{
 				"status": "failure",
 				"cause":  "username is already taken",
+			})
+			return
+		}
+
+		if isEmailExist && !isVerified {
+			c.JSON(http.StatusOK, gin.H{
+				"status": "failure",
+				"cause":  "email has been registered but not verified",
+				"userid": userId,
 			})
 			return
 		}

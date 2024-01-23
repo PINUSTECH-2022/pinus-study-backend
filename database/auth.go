@@ -60,7 +60,7 @@ func doPasswordsMatch(hashedPassword, currPassword string, salt []byte) bool {
 	return hashedPassword == currPasswordHash
 }
 
-func SignUp(db *sql.DB, email string, username string, password string, secretCode string) (int, int, bool, bool, error) {
+func SignUp(db *sql.DB, email string, username string, password string, secretCode string) (int, int, bool, bool, bool, error) {
 	salt := generateRandomSalt()
 	saltString := hex.EncodeToString(salt)
 	encryptedPassword := hashPassword(password, salt)
@@ -74,20 +74,20 @@ func SignUp(db *sql.DB, email string, username string, password string, secretCo
 	// return nexId, nil
 
 	var userId, emailId int
-	var isEmailExist, isUsernameExist bool
+	var isEmailExist, isUsernameExist, isVerified bool
 
 	sql_statement := `
 	CALL signup($1, $2, $3, $4, $5,
-	$6, $7, $8, $9);
+	$6, $7, $8, $9, $10);
 	`
 
-	err := db.QueryRow(sql_statement, username, email, encryptedPassword, saltString, secretCode, &userId, &emailId, &isEmailExist, &isUsernameExist).
-		Scan(&userId, &emailId, &isEmailExist, &isUsernameExist)
+	err := db.QueryRow(sql_statement, username, email, encryptedPassword, saltString, secretCode, &userId, &emailId, &isEmailExist, &isUsernameExist, &isVerified).
+		Scan(&userId, &emailId, &isEmailExist, &isUsernameExist, &isVerified)
 	if err != nil {
 		panic(err)
 	}
 
-	return userId, emailId, isEmailExist, isUsernameExist, nil
+	return userId, emailId, isEmailExist, isUsernameExist, isVerified, nil
 }
 
 func LogIn(db *sql.DB, nameOrEmail string, password string) (bool, bool, bool, int, string, error) {
