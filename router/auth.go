@@ -130,23 +130,34 @@ func LogIn(db *sql.DB) func(c *gin.Context) {
 			return
 		}
 
-		var status string
+		var status, cause string
 		if success {
 			status = "success"
-		} else if !isSignedUp {
-			status = "username or email does not exist"
-		} else if !isVerified {
-			status = "failure due to unverified email"
 		} else {
-			status = "failure due to wrong password"
+			status = "failure"
 			userid = -1
 		}
 
-		c.JSON(http.StatusOK, gin.H{
-			"status": status,
-			"token":  token,
-			"userid": userid,
-		})
+		if !isSignedUp {
+			cause = "username or email does not exist"
+		} else if !isVerified {
+			cause = "failure due to unverified email"
+		} else {
+			cause = "failure due to wrong password"
+		}
+
+		if status == "success" {
+			c.JSON(http.StatusOK, gin.H{
+				"status": status,
+				"token":  token,
+				"userid": userid,
+			})
+		} else {
+			c.JSON(http.StatusOK, gin.H{
+				"status": status,
+				"cause":  cause,
+			})
+		}
 	}
 }
 
