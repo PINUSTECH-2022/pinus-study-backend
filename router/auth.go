@@ -55,7 +55,7 @@ func SignUp(db *sql.DB) func(c *gin.Context) {
 		}
 
 		secretCode := util.RandomString(32)
-		userId, emailId, isEmailExist, isUsernameExist, err1 := database.SignUp(db, User.Email, User.Username, User.Password, secretCode)
+		userId, emailId, isEmailExist, isUsernameExist, isVerified, err1 := database.SignUp(db, User.Email, User.Username, User.Password, secretCode)
 		if err1 != nil {
 			c.JSON(http.StatusOK, gin.H{
 				"status": "failure",
@@ -64,7 +64,7 @@ func SignUp(db *sql.DB) func(c *gin.Context) {
 			return
 		}
 
-		if isEmailExist {
+		if isEmailExist && isVerified {
 			c.JSON(http.StatusOK, gin.H{
 				"status": "failure",
 				"cause":  "email is already taken",
@@ -76,6 +76,15 @@ func SignUp(db *sql.DB) func(c *gin.Context) {
 			c.JSON(http.StatusOK, gin.H{
 				"status": "failure",
 				"cause":  "username is already taken",
+			})
+			return
+		}
+
+		if isEmailExist && !isVerified {
+			c.JSON(http.StatusOK, gin.H{
+				"status": "failure",
+				"cause":  "email has been registered but not verified",
+				"userid": userId,
 			})
 			return
 		}
@@ -121,23 +130,34 @@ func LogIn(db *sql.DB) func(c *gin.Context) {
 			return
 		}
 
-		var status string
+		var status, cause string
 		if success {
 			status = "success"
-		} else if !isSignedUp {
-			status = "username or email does not exist"
-		} else if !isVerified {
-			status = "failure due to unverified email"
 		} else {
-			status = "failure due to wrong password"
+			status = "failure"
 			userid = -1
 		}
 
-		c.JSON(http.StatusOK, gin.H{
-			"status": status,
-			"token":  token,
-			"userid": userid,
-		})
+		if !isSignedUp {
+			cause = "username or email does not exist"
+		} else if !isVerified {
+			cause = "failure due to unverified email"
+		} else {
+			cause = "failure due to wrong password"
+		}
+
+		if status == "success" {
+			c.JSON(http.StatusOK, gin.H{
+				"status": status,
+				"token":  token,
+				"userid": userid,
+			})
+		} else {
+			c.JSON(http.StatusOK, gin.H{
+				"status": status,
+				"cause":  cause,
+			})
+		}
 	}
 }
 
