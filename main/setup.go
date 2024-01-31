@@ -2,6 +2,7 @@ package main
 
 import (
 	"example/web-service-gin/database"
+	"example/web-service-gin/imports"
 	"example/web-service-gin/sql"
 	"fmt"
 )
@@ -15,5 +16,5 @@ func main() {
 
 	fmt.Println("Database has been setup successfully")
 
-	// imports.ModulesSetup()
+	imports.ModulesSetup()
 }
