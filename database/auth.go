@@ -243,3 +243,56 @@ func VerifyEmail(db *sql.DB, emailid int, secretCode string) (bool, bool, bool, 
 
 	return isVerified, isExpired, isMatch, nil
 }
+
+// Change password returning whether the user exist, whether the account has been verified, and whether the old password match
+func ChangePassword(db *sql.DB, userid int, oldPassword string, newPassword string) (bool, bool, bool, error) {
+	sql_statement := `
+	SELECT password, salt, is_verified FROM users WHERE id = $1;
+	`
+
+	var encryptedPassword, saltString string
+	var isVerified bool
+	rows, err := db.Query(sql_statement, userid)
+
+	if err != nil {
+		panic(err)
+	}
+
+	defer rows.Close()
+
+	if !rows.Next() {
+		return false, false, false, nil
+	}
+
+	rows.Scan(&encryptedPassword, &saltString, &isVerified)
+
+	if !isVerified {
+		return true, false, false, nil
+	}
+
+	salt, err1 := hex.DecodeString(saltString)
+	if err1 != nil {
+		panic(err1)
+	}
+
+	if !doPasswordsMatch(encryptedPassword, oldPassword, []byte(salt)) {
+		return true, true, false, nil
+	}
+
+	newSalt := generateRandomSalt()
+	newSaltString := hex.EncodeToString(newSalt)
+	newEncryptedPassword := hashPassword(newPassword, []byte(newSalt))
+
+	sql_statement1 := `
+	UPDATE users
+	SET password = $1, salt = $2
+	WHERE id = $3;
+	`
+
+	_, err2 := db.Exec(sql_statement1, newEncryptedPassword, newSaltString, userid)
+	if err2 != nil {
+		panic(err2)
+	}
+
+	return true, true, true, nil
+}

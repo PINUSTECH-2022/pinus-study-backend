@@ -290,3 +290,68 @@ func MakeVerification(db *sql.DB) func(c *gin.Context) {
 		})
 	}
 }
+
+// Changes the user's password
+func ChangePassword(db *sql.DB) func(c *gin.Context) {
+	return func(c *gin.Context) {
+		userId, err := strconv.Atoi(c.Param("userid"))
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"status": "failure",
+				"cause":  "userid is malformed",
+			})
+			return
+		}
+
+		var Password struct {
+			New string `json:"newPassword" binding:"required"`
+			Old string `json:"oldPassword" binding:"required"`
+		}
+
+		err1 := c.ShouldBindJSON(&Password)
+		if err1 != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"status": "failure",
+				"cause":  "Request body is malformed",
+			})
+			return
+		}
+
+		isUserExist, isVerified, isPasswordMatch, err2 := database.ChangePassword(db, userId, Password.Old, Password.New)
+		if err2 != nil {
+			c.JSON(http.StatusOK, gin.H{
+				"status": "failure",
+				"cause":  err2.Error(),
+			})
+			return
+		}
+
+		if !isUserExist {
+			c.JSON(http.StatusNotFound, gin.H{
+				"status": "failure",
+				"cause":  "User not found",
+			})
+			return
+		}
+
+		if !isVerified {
+			c.JSON(http.StatusUnauthorized, gin.H{
+				"status": "failure",
+				"cause":  "Email has not been verified",
+			})
+			return
+		}
+
+		if !isPasswordMatch {
+			c.JSON(http.StatusUnauthorized, gin.H{
+				"status": "failure",
+				"cause":  "Password does not match",
+			})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{
+			"status": "success",
+		})
+	}
+}
