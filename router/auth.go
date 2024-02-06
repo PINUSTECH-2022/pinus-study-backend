@@ -159,7 +159,7 @@ func sendVerification(userid int, emailid int, email string, username string, se
 	content := fmt.Sprintf(`Dear Pinusian, <br/>
 	There has been a request to register the address %s with the user %s on the PINUS STUDY. 
 	In order to complete the address registration you need to go to the following link in a web browser: <a href = "%s">%s</a> <br/>
-	Best regards from PINUS`, email, username, verifyUrl, verifyUrl)
+	Best regards from PINUS Team`, email, username, verifyUrl, verifyUrl)
 	to := []string{email}
 
 	err1 := mail.NewGmailSender(emailSenderName, emailSenderAddress, emailSenderPassword).SendEmail(subject, content, to, nil, nil, nil)
@@ -346,6 +346,93 @@ func ChangePassword(db *sql.DB) func(c *gin.Context) {
 			c.JSON(http.StatusUnauthorized, gin.H{
 				"status": "failure",
 				"cause":  "Password does not match",
+			})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{
+			"status": "success",
+		})
+	}
+}
+
+// Sends the email verification link to the user's email
+func sendPasswordRecovery(userid int, recoveryId int, email string, secretCode string) error {
+	err := godotenv.Load(".env")
+
+	if err != nil {
+		panic(err)
+	}
+
+	frontendUrl := os.Getenv("FRONTEND_URL")
+	emailSenderName := os.Getenv("EMAIL_SENDER_NAME")
+	emailSenderAddress := os.Getenv("EMAIL_SENDER_ADDRESS")
+	emailSenderPassword := os.Getenv("EMAIL_SENDER_PASSWORD")
+
+	subject := "Password Reset Request: Action Required for Your PINUS STUDY Account"
+	recoveryUrl := fmt.Sprintf("%s/password_recovery?recovery_id=%d&secret_code=%s", frontendUrl, recoveryId, secretCode)
+	content := fmt.Sprintf(`Dear Pinusian, <br/>
+	We noticed that there has been a recent request to reset the password for your PINUS STUDY account. No worries, we're here to assist you in regaining access to your account. <br/>
+	To initiate the password reset process, please follow the link provided below:<br/>
+	<a href = "%s">%s</a> <br/>
+	If you didn't request this password reset or if you believe this was an error, please disregard this email. 
+	Your account security is important to us, and we recommend taking precautionary measures such as updating your password regularly and enabling two-factor authentication.<br/>
+	<br/>
+	Best regards,<br/>
+	PINUS STUDY Team`, recoveryUrl, recoveryUrl)
+	to := []string{email}
+
+	err1 := mail.NewGmailSender(emailSenderName, emailSenderAddress, emailSenderPassword).SendEmail(subject, content, to, nil, nil, nil)
+	if err1 != nil {
+		return err1
+	}
+
+	return nil
+}
+
+// Forgot password to create password recovery and send it via email
+func ForgotPassword(db *sql.DB) func(c *gin.Context) {
+	return func(c *gin.Context) {
+		userId, err := strconv.Atoi(c.Param("userid"))
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"status": "failure",
+				"cause":  "userid is malformed",
+			})
+			return
+		}
+
+		secretCode := util.RandomString(32)
+		isExist, isVerified, recoveryId, email, err1 := database.MakePasswordRecovery(db, userId, secretCode)
+		if err1 != nil {
+			c.JSON(http.StatusOK, gin.H{
+				"status": "failure",
+				"cause":  err1.Error(),
+			})
+			return
+		}
+
+		if !isExist {
+			c.JSON(http.StatusNotFound, gin.H{
+				"status": "failure",
+				"cause":  "User not found",
+			})
+			return
+		}
+
+		if !isVerified {
+			c.JSON(http.StatusUnauthorized, gin.H{
+				"status": "failure",
+				"cause":  "Email has not been verified",
+			})
+			return
+		}
+
+		err2 := sendPasswordRecovery(userId, recoveryId, email, secretCode)
+		if err2 != nil {
+			c.JSON(http.StatusOK, gin.H{
+				"status": "failure",
+				"cause":  "Failure in sending email",
 			})
 			return
 		}
