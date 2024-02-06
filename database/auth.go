@@ -279,20 +279,24 @@ func ChangePassword(db *sql.DB, userid int, oldPassword string, newPassword stri
 		return true, true, false, nil
 	}
 
-	newSalt := generateRandomSalt()
-	newSaltString := hex.EncodeToString(newSalt)
-	newEncryptedPassword := hashPassword(newPassword, []byte(newSalt))
+	UpdatePassword(db, userid, newPassword)
 
-	sql_statement1 := `
+	return true, true, true, nil
+}
+
+func UpdatePassword(db *sql.DB, userid int, newPassword string) (bool, error) {
+	sql_statement := `
 	UPDATE users
 	SET password = $1, salt = $2
 	WHERE id = $3;
 	`
+	newSalt := generateRandomSalt()
+	newSaltString := hex.EncodeToString(newSalt)
+	newEncryptedPassword := hashPassword(newPassword, []byte(newSalt))
 
-	_, err2 := db.Exec(sql_statement1, newEncryptedPassword, newSaltString, userid)
-	if err2 != nil {
-		panic(err2)
+	_, err := db.Exec(sql_statement, newEncryptedPassword, newSaltString, userid)
+	if err != nil {
+		panic(err)
 	}
-
-	return true, true, true, nil
+	return true, nil
 }
