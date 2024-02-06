@@ -316,3 +316,20 @@ func MakePasswordRecovery(db *sql.DB, userid int, secretCode string) (bool, bool
 	}
 	return isExist, isVerified, recoveryId, email, nil
 }
+
+// Get whether the recoveryId and secretCode match, expired, and used
+func GetRecoverPassword(db *sql.DB, recoveryId int, secretCode string) (bool, bool, bool, error) {
+	sql_statement := `
+	SELECT secret_code = $1 AS is_match, expired_at :: time < CURRENT_TIME AS is_expired, is_used
+	FROM password_recoveries
+	WHERE id = $2;
+	`
+
+	var isMatch, isExpired, isUsed bool
+	err := db.QueryRow(sql_statement, secretCode, recoveryId).Scan(&isMatch, &isExpired, &isUsed)
+	if err != nil {
+		panic(err)
+	}
+
+	return isMatch, isExpired, isUsed, nil
+}
