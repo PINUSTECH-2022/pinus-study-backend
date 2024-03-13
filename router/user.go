@@ -49,6 +49,14 @@ func ChangeUsername(db *sql.DB) func(c *gin.Context) {
 			return
 		}
 
+		if len(User.NewUsername) <= 0 || len(User.NewUsername) > 15 {
+			c.JSON(http.StatusOK, gin.H{
+				"status": "failure",
+				"cause":  "Must be <= 15 characters",
+			})
+			return
+		}
+
 		userId, err1 := strconv.Atoi(c.Param("userid"))
 
 		if err1 != nil {
