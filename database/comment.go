@@ -20,17 +20,7 @@ type Comment struct {
 
 func GetCommentById(db *sql.DB, id int) Comment {
 	sql_statement := `
-	SELECT c.content, u.id, u.username, c.is_deleted, c.timestamp,
-		(
-			SELECT COUNT(*)
-			FROM Likes_Comments
-			WHERE state = TRUE AND commentid = $1
-		) as likes,
-		(
-			SELECT COUNT(*)
-			FROM Likes_Comments
-			WHERE state = FALSE AND commentid = $1
-		) as dislikes,
+	SELECT c.content, u.id, u.username, c.is_deleted, c.timestamp, c.likes, c.dislikes,
 		(
 			SELECT ARRAY(
 			 	SELECT DISTINCT ch.id
