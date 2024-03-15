@@ -43,6 +43,33 @@ func GetLikeThread(db *sql.DB) func(c *gin.Context) {
 	}
 }
 
+func GetListOfLikeThread(db *sql.DB) func(c *gin.Context) {
+	return func(c *gin.Context) {
+		threadid, err := strconv.Atoi(c.Param("threadid"))
+		if err != nil {
+			c.JSON(http.StatusOK, gin.H{
+				"status": "failure",
+				"cause":  err.Error(),
+			})
+			return
+		}
+
+		listOfLike, err1 := database.GetListOfLikeThread(db, threadid)
+		if err1 != nil {
+			c.JSON(http.StatusOK, gin.H{
+				"status": "failure",
+				"cause":  err1.Error(),
+			})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{
+			"status": "success",
+			"likes":  listOfLike,
+		})
+	}
+}
+
 func SetLikeThread(db *sql.DB) func(c *gin.Context) {
 	return func(c *gin.Context) {
 		threadid, err := strconv.Atoi(c.Param("threadid"))
