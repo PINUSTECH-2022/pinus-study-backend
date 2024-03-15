@@ -60,6 +60,34 @@ func GetListOfLikeThread(db *sql.DB, threadid int) ([]int, error) {
 	return like_list, nil
 }
 
+// Get the list of user who dislike a certain thread
+func GetListOfDislikeThread(db *sql.DB, threadid int) ([]int, error) {
+	sql_statement := `
+		SELECT userId
+		FROM likes_threads
+		WHERE threadId = $1 AND state = FALSE;
+	`
+
+	rows, err := db.Query(sql_statement, threadid)
+	if err != nil {
+		panic(err)
+	}
+	defer rows.Close()
+
+	var dislike_list []int
+	for rows.Next() {
+		var userid int
+		rows.Scan(&userid)
+		dislike_list = append(dislike_list, userid)
+	}
+
+	if rows.Err() != nil {
+		panic(rows.Err())
+	}
+
+	return dislike_list, nil
+}
+
 func SetLikeThread(db *sql.DB, state int, threadid int, userid int) error {
 	ResetLikeThread(db, threadid, userid)
 
