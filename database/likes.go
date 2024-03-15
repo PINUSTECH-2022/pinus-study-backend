@@ -172,6 +172,34 @@ func GetListOfLikeComment(db *sql.DB, commentid int) ([]int, error) {
 	return like_list, nil
 }
 
+// Get the list of user who dislike a certain comment
+func GetListOfDislikeComment(db *sql.DB, commentid int) ([]int, error) {
+	sql_statement := `
+		SELECT userId
+		FROM likes_comments
+		WHERE commentId = $1 AND state = FALSE;
+	`
+
+	rows, err := db.Query(sql_statement, commentid)
+	if err != nil {
+		panic(err)
+	}
+	defer rows.Close()
+
+	var dislike_list []int
+	for rows.Next() {
+		var userid int
+		rows.Scan(&userid)
+		dislike_list = append(dislike_list, userid)
+	}
+
+	if rows.Err() != nil {
+		panic(rows.Err())
+	}
+
+	return dislike_list, nil
+}
+
 func SetLikeComment(db *sql.DB, state int, commentid int, userid int) error {
 	ResetLikeComment(db, commentid, userid)
 
