@@ -69,6 +69,7 @@ func main() {
 	r.GET("likes/thread/:threadid/dislikes", router.GetListOfDislikeThread(db))
 	r.GET("/likes/thread/:threadid/:userid", router.GetLikeThread(db))
 	r.POST("/likes/thread/:threadid/:userid/:state", middlewares.JwtAuthMiddleware(), router.SetLikeThread(db))
+	r.GET("/likes/comment/:commentid/likes", router.GetListOfLikeComment(db))
 	r.GET("/likes/comment/:commentid/:userid", router.GetLikeComment(db))
 	r.POST("/likes/comment/:commentid/:userid/:state", middlewares.JwtAuthMiddleware(), router.SetLikeComment(db))
 

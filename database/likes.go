@@ -144,6 +144,34 @@ func GetLikeComment(db *sql.DB, commentid int, userid int) (int, error) {
 	return result, nil
 }
 
+// Get the list of user who like a certain comment
+func GetListOfLikeComment(db *sql.DB, commentid int) ([]int, error) {
+	sql_statement := `
+		SELECT userId
+		FROM likes_comments
+		WHERE commentId = $1 AND state = TRUE;
+	`
+
+	rows, err := db.Query(sql_statement, commentid)
+	if err != nil {
+		panic(err)
+	}
+	defer rows.Close()
+
+	var like_list []int
+	for rows.Next() {
+		var userid int
+		rows.Scan(&userid)
+		like_list = append(like_list, userid)
+	}
+
+	if rows.Err() != nil {
+		panic(rows.Err())
+	}
+
+	return like_list, nil
+}
+
 func SetLikeComment(db *sql.DB, state int, commentid int, userid int) error {
 	ResetLikeComment(db, commentid, userid)
 

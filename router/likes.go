@@ -185,6 +185,34 @@ func GetLikeComment(db *sql.DB) func(c *gin.Context) {
 	}
 }
 
+// Get the list of user who likes a certain comment
+func GetListOfLikeComment(db *sql.DB) func(c *gin.Context) {
+	return func(c *gin.Context) {
+		commentid, err := strconv.Atoi(c.Param("commentid"))
+		if err != nil {
+			c.JSON(http.StatusOK, gin.H{
+				"status": "failure",
+				"cause":  err.Error(),
+			})
+			return
+		}
+
+		listOfLike, err1 := database.GetListOfLikeComment(db, commentid)
+		if err1 != nil {
+			c.JSON(http.StatusOK, gin.H{
+				"status": "failure",
+				"cause":  err1.Error(),
+			})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{
+			"status": "success",
+			"likes":  listOfLike,
+		})
+	}
+}
+
 func SetLikeComment(db *sql.DB) func(c *gin.Context) {
 	return func(c *gin.Context) {
 		commentid, err := strconv.Atoi(c.Param("commentid"))
