@@ -235,8 +235,8 @@ func GetListOfDislikeComment(db *sql.DB) func(c *gin.Context) {
 		}
 
 		c.JSON(http.StatusOK, gin.H{
-			"status": "success",
-			"likes":  listOfDislike,
+			"status":   "success",
+			"dislikes": listOfDislike,
 		})
 	}
 }
