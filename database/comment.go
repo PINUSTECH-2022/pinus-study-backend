@@ -18,9 +18,10 @@ type Comment struct {
 	CommentChilds []int
 }
 
+// Get comment by it's id
 func GetCommentById(db *sql.DB, id int) Comment {
 	sql_statement := `
-	SELECT c.content, u.id, u.username, c.is_deleted, c.timestamp, c.likes, c.dislikes,
+	SELECT c.content, u.id, u.username, c.is_deleted, c.timestamp, c.likes_count, c.dislikes_count,
 		(
 			SELECT ARRAY(
 			 	SELECT DISTINCT ch.id
