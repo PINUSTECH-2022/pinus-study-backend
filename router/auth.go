@@ -529,3 +529,78 @@ func CheckPasswordRecovery(db *sql.DB) func(c *gin.Context) {
 		})
 	}
 }
+
+// Password recovery
+func RecoverPassword(db *sql.DB) func(c *gin.Context) {
+	return func(c *gin.Context) {
+		recoverId, err := strconv.Atoi(c.Param("recoveryid"))
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"status": "failure",
+				"cause":  "Recovery id is malformed",
+			})
+			return
+		}
+
+		var User struct {
+			Password   string `json:"password" binding:"required"`
+			SecretCode string `json:"secretcode" binding:"required"`
+		}
+		err1 := c.ShouldBindJSON(&User)
+		if err1 != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"status": "failure",
+				"cause":  "JSON request body is malformed",
+			})
+			return
+		}
+
+		isExist, isExpired, isMatch, isUsed, err2 := database.RecoverPassword(db, recoverId, User.SecretCode, User.Password)
+		if err2 != nil {
+			c.JSON(http.StatusOK, gin.H{
+				"status": "failure",
+				"cause":  err2.Error(),
+			})
+			return
+		}
+
+		// Check whether the recovery code exist
+		if !isExist {
+			c.JSON(http.StatusNotFound, gin.H{
+				"status": "failure",
+				"cause":  "Recovery code does not exist",
+			})
+		}
+
+		// Check whether the secret code in the request match with the secret code in the database
+		if !isMatch {
+			c.JSON(http.StatusUnauthorized, gin.H{
+				"status": "failure",
+				"cause":  "Secret code does not match",
+			})
+			return
+		}
+
+		// Check whether the secret code is expired
+		if isExpired {
+			c.JSON(http.StatusForbidden, gin.H{
+				"status": "failure",
+				"cause":  "Recovery link is expired",
+			})
+			return
+		}
+
+		// Check whether the secret code is used
+		if isUsed {
+			c.JSON(http.StatusGone, gin.H{
+				"status": "failure",
+				"cause":  "Recovery link has been used",
+			})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{
+			"status": "success",
+		})
+	}
+}
