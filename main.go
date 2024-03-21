@@ -40,6 +40,7 @@ func main() {
 	r.GET("/user/:userid", router.GetUserInfoByID(db))
 
 	r.POST("/user/change_password/:userid", middlewares.JwtAuthMiddleware(), router.ChangePassword(db))
+	r.PUT("/user/change_username/:userid", middlewares.JwtAuthMiddleware(), router.ChangeUsername(db))
 
 	r.POST("/follow/:userid", middlewares.JwtAuthMiddleware(), router.FollowUser(db))
 	r.DELETE("/follow/:userid", middlewares.JwtAuthMiddleware(), router.UnfollowUser(db))
