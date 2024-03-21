@@ -14,6 +14,11 @@ type Follow struct {
 	Timestamp   string
 }
 
+type UserIdAndUsername struct {
+	UserId   int
+	Username string
+}
+
 func FollowUser(db *sql.DB, followerid int, followingid int) error {
 	sql_query := `
 	INSERT INTO follows (followerid, followingid)
@@ -25,7 +30,7 @@ func FollowUser(db *sql.DB, followerid int, followingid int) error {
 
 	if err != nil {
 		fmt.Println(err.Error())
-		return errors.New("Unable to post follow")
+		return errors.New("unable to post follow")
 	}
 
 	return nil
@@ -42,8 +47,72 @@ func UnfollowUser(db *sql.DB, followerid int, followingid int) error {
 
 	if err != nil {
 		fmt.Println(err.Error())
-		return errors.New("Unable to unfollow")
+		return errors.New("unable to unfollow")
 	}
 
 	return nil
+}
+
+func GetFollowers(db *sql.DB, userid int) ([]UserIdAndUsername, error) {
+	sql_statement := `
+	SELECT f.followerid, u.username
+	FROM follows f, users u
+	WHERE f.followerid = u.id AND f.followingid = $1
+	`
+	rows, err := db.Query(sql_statement, userid)
+	if err != nil {
+		fmt.Println(err.Error())
+		return nil, errors.New("something went wrong when getting followers")
+	}
+	defer rows.Close()
+
+	followers := []UserIdAndUsername{}
+	for rows.Next() {
+		var follower UserIdAndUsername
+		err := rows.Scan(&follower.UserId, &follower.Username)
+		if err != nil {
+			fmt.Println(err.Error())
+			return nil, errors.New("something went wrong when getting followers")
+		}
+		followers = append(followers, follower)
+	}
+
+	if rows.Err() != nil {
+		fmt.Println(err.Error())
+		return nil, errors.New("something went wrong when getting followers")
+	}
+
+	return followers, nil
+}
+
+func GetFollowings(db *sql.DB, userid int) ([]UserIdAndUsername, error) {
+	sql_statement := `
+	SELECT f.followingid, u.username
+	FROM follows f, users u
+	WHERE f.followingid = u.id AND f.followerid = $1
+	`
+	rows, err := db.Query(sql_statement, userid)
+	if err != nil {
+		fmt.Println(err.Error())
+		return nil, errors.New("something went wrong when getting followings")
+	}
+	defer rows.Close()
+
+	followings := []UserIdAndUsername{}
+	for rows.Next() {
+		var following UserIdAndUsername
+		err := rows.Scan(&following.UserId, &following.Username)
+		if err != nil {
+			fmt.Println(err.Error())
+			return nil, errors.New("something went wrong when getting followings")
+		}
+		followings = append(followings, following)
+	}
+
+	if rows.Err() != nil {
+		fmt.Println(err.Error())
+		return nil, errors.New("something went wrong when getting followings")
+	}
+
+	return followings, nil
 }

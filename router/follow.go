@@ -88,3 +88,59 @@ func UnfollowUser(db *sql.DB) func(c *gin.Context) {
 		})
 	}
 }
+
+func GetFollowers(db *sql.DB) func(c *gin.Context) {
+	return func(c *gin.Context) {
+		userId, err := strconv.Atoi(c.Param("userid"))
+
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"status": "failure",
+				"cause":  "Unfollow request failed",
+			})
+			return
+		}
+
+		followers, err := database.GetFollowers(db, userId)
+		if err != nil {
+			c.JSON(http.StatusOK, gin.H{
+				"status": "failure",
+				"cause":  err.Error(),
+			})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{
+			"status":    "success",
+			"followers": followers,
+		})
+	}
+}
+
+func GetFollowings(db *sql.DB) func(c *gin.Context) {
+	return func(c *gin.Context) {
+		userId, err := strconv.Atoi(c.Param("userid"))
+
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"status": "failure",
+				"cause":  "Unfollow request failed",
+			})
+			return
+		}
+
+		following, err := database.GetFollowings(db, userId)
+		if err != nil {
+			c.JSON(http.StatusOK, gin.H{
+				"status": "failure",
+				"cause":  err.Error(),
+			})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{
+			"status":    "success",
+			"followers": following,
+		})
+	}
+}
