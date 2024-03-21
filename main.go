@@ -41,6 +41,8 @@ func main() {
 
 	r.POST("/user/change_password/:userid", middlewares.JwtAuthMiddleware(), router.ChangePassword(db))
 
+	r.POST("/follow/:userid", middlewares.JwtAuthMiddleware(), router.FollowUser(db))
+
 	r.POST("/module", router.GetModules(db))
 	r.GET("/module/:moduleid", router.GetModuleByModuleId(db))
 	r.POST("/module/:moduleid", middlewares.JwtAuthMiddleware(), router.PostThread(db))
