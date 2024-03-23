@@ -42,6 +42,11 @@ func main() {
 	r.POST("/user/change_password/:userid", middlewares.JwtAuthMiddleware(), router.ChangePassword(db))
 	r.PUT("/user/change_username/:userid", middlewares.JwtAuthMiddleware(), router.ChangeUsername(db))
 
+	r.POST("/follow/:userid", middlewares.JwtAuthMiddleware(), router.FollowUser(db))
+	r.DELETE("/follow/:userid", middlewares.JwtAuthMiddleware(), router.UnfollowUser(db))
+	r.GET("/follow/followers/:userid", middlewares.JwtAuthMiddleware(), router.GetFollowers(db))
+	r.GET("/follow/followings/:userid", middlewares.JwtAuthMiddleware(), router.GetFollowings(db))
+
 	r.POST("/module", router.GetModules(db))
 	r.GET("/module/:moduleid", router.GetModuleByModuleId(db))
 	r.POST("/module/:moduleid", middlewares.JwtAuthMiddleware(), router.PostThread(db))

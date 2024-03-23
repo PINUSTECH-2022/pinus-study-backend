@@ -8,8 +8,9 @@ CREATE OR REPLACE PROCEDURE update_all_comment_count()
 LANGUAGE plpgsql
 AS $$
 BEGIN
-    UPDATE Comments t
-    SET likes = (SELECT COUNT(*) FROM Likes_Comments l WHERE l.threadid = t.id AND l.state),
-    dislikes = (SELECT COUNT(*) FROM Likes_Comments l WHERE l.threadid = t.id AND NOT l.state),
+    UPDATE comments c
+    SET likes_count = (SELECT COUNT(*) FROM likes_comments l WHERE l.commentid = c.id AND l.state),
+    dislikes_count = (SELECT COUNT(*) FROM likes_comments l WHERE l.commentid = c.id AND NOT l.state),
+	comments_count = (SELECT COUNT(*) FROM comments c1 WHERE c1.parentid = c.id AND NOT c1.is_deleted);
 END;
 $$;
