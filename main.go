@@ -44,8 +44,8 @@ func main() {
 
 	r.POST("/follow/:userid", middlewares.JwtAuthMiddleware(), router.FollowUser(db))
 	r.DELETE("/follow/:userid", middlewares.JwtAuthMiddleware(), router.UnfollowUser(db))
-	r.GET("/follow/followers/:userid", middlewares.JwtAuthMiddleware(), router.GetFollowers(db))
-	r.GET("/follow/followings/:userid", middlewares.JwtAuthMiddleware(), router.GetFollowings(db))
+	r.GET("/follow/followers/:userid", router.GetFollowers(db))
+	r.GET("/follow/followings/:userid", router.GetFollowings(db))
 
 	r.POST("/module", router.GetModules(db))
 	r.GET("/module/:moduleid", router.GetModuleByModuleId(db))

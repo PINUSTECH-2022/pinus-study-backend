@@ -14,11 +14,6 @@ type Follow struct {
 	Timestamp   string
 }
 
-type UserIdAndUsername struct {
-	UserId   int
-	Username string
-}
-
 func FollowUser(db *sql.DB, followerid int, followingid int) error {
 	sql_query := `
 	INSERT INTO follows (followerid, followingid)
@@ -53,7 +48,7 @@ func UnfollowUser(db *sql.DB, followerid int, followingid int) error {
 	return nil
 }
 
-func GetFollowers(db *sql.DB, userid int) ([]UserIdAndUsername, error) {
+func GetFollowers(db *sql.DB, userid int) ([]User, error) {
 	sql_statement := `
 	SELECT f.followerid, u.username
 	FROM follows f, users u
@@ -66,10 +61,10 @@ func GetFollowers(db *sql.DB, userid int) ([]UserIdAndUsername, error) {
 	}
 	defer rows.Close()
 
-	followers := []UserIdAndUsername{}
+	var followers []User
 	for rows.Next() {
-		var follower UserIdAndUsername
-		err := rows.Scan(&follower.UserId, &follower.Username)
+		var follower User
+		err := rows.Scan(&follower.Id, &follower.Username)
 		if err != nil {
 			fmt.Println(err.Error())
 			return nil, errors.New("something went wrong when getting followers")
@@ -85,7 +80,7 @@ func GetFollowers(db *sql.DB, userid int) ([]UserIdAndUsername, error) {
 	return followers, nil
 }
 
-func GetFollowings(db *sql.DB, userid int) ([]UserIdAndUsername, error) {
+func GetFollowings(db *sql.DB, userid int) ([]User, error) {
 	sql_statement := `
 	SELECT f.followingid, u.username
 	FROM follows f, users u
@@ -98,10 +93,10 @@ func GetFollowings(db *sql.DB, userid int) ([]UserIdAndUsername, error) {
 	}
 	defer rows.Close()
 
-	followings := []UserIdAndUsername{}
+	var followings []User
 	for rows.Next() {
-		var following UserIdAndUsername
-		err := rows.Scan(&following.UserId, &following.Username)
+		var following User
+		err := rows.Scan(&following.Id, &following.Username)
 		if err != nil {
 			fmt.Println(err.Error())
 			return nil, errors.New("something went wrong when getting followings")
