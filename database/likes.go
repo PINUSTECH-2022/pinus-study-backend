@@ -33,11 +33,11 @@ func GetLikeThread(db *sql.DB, threadid int, userid int) (int, error) {
 }
 
 // Get the list of user who like a certain thread
-func GetListOfLikeThread(db *sql.DB, threadid int) ([]int, error) {
+func GetListOfLikeThread(db *sql.DB, threadid int) ([]User, error) {
 	sql_statement := `
-		SELECT userId
-		FROM likes_threads
-		WHERE threadId = $1 AND state = TRUE;
+		SELECT u.id, u.username
+		FROM likes_threads lt, users u
+		WHERE lt.threadId = $1 AND lt.state = TRUE AND lt.userId = u.id;
 	`
 
 	rows, err := db.Query(sql_statement, threadid)
@@ -46,11 +46,11 @@ func GetListOfLikeThread(db *sql.DB, threadid int) ([]int, error) {
 	}
 	defer rows.Close()
 
-	var like_list []int
+	var like_list []User
 	for rows.Next() {
-		var userid int
-		rows.Scan(&userid)
-		like_list = append(like_list, userid)
+		var newUser User
+		rows.Scan(&newUser.Id, &newUser.Username)
+		like_list = append(like_list, newUser)
 	}
 
 	if rows.Err() != nil {
@@ -61,11 +61,11 @@ func GetListOfLikeThread(db *sql.DB, threadid int) ([]int, error) {
 }
 
 // Get the list of user who dislike a certain thread
-func GetListOfDislikeThread(db *sql.DB, threadid int) ([]int, error) {
+func GetListOfDislikeThread(db *sql.DB, threadid int) ([]User, error) {
 	sql_statement := `
-		SELECT userId
-		FROM likes_threads
-		WHERE threadId = $1 AND state = FALSE;
+		SELECT u.id, u.username
+		FROM likes_threads lt, users u
+		WHERE lt.threadId = $1 AND lt.state = FALSE AND lt.userId = u.id;
 	`
 
 	rows, err := db.Query(sql_statement, threadid)
@@ -74,11 +74,11 @@ func GetListOfDislikeThread(db *sql.DB, threadid int) ([]int, error) {
 	}
 	defer rows.Close()
 
-	var dislike_list []int
+	var dislike_list []User
 	for rows.Next() {
-		var userid int
-		rows.Scan(&userid)
-		dislike_list = append(dislike_list, userid)
+		var newUser User
+		rows.Scan(&newUser.Id, &newUser.Username)
+		dislike_list = append(dislike_list, newUser)
 	}
 
 	if rows.Err() != nil {
@@ -145,11 +145,11 @@ func GetLikeComment(db *sql.DB, commentid int, userid int) (int, error) {
 }
 
 // Get the list of user who like a certain comment
-func GetListOfLikeComment(db *sql.DB, commentid int) ([]int, error) {
+func GetListOfLikeComment(db *sql.DB, commentid int) ([]User, error) {
 	sql_statement := `
-		SELECT userId
-		FROM likes_comments
-		WHERE commentId = $1 AND state = TRUE;
+		SELECT u.id, u.username
+		FROM likes_comments lc, users u
+		WHERE lc.commentId = $1 AND lc.state = TRUE AND lc.userId = u.id;
 	`
 
 	rows, err := db.Query(sql_statement, commentid)
@@ -158,11 +158,11 @@ func GetListOfLikeComment(db *sql.DB, commentid int) ([]int, error) {
 	}
 	defer rows.Close()
 
-	var like_list []int
+	var like_list []User
 	for rows.Next() {
-		var userid int
-		rows.Scan(&userid)
-		like_list = append(like_list, userid)
+		var newUser User
+		rows.Scan(&newUser.Id, &newUser.Username)
+		like_list = append(like_list, newUser)
 	}
 
 	if rows.Err() != nil {
@@ -173,11 +173,11 @@ func GetListOfLikeComment(db *sql.DB, commentid int) ([]int, error) {
 }
 
 // Get the list of user who dislike a certain comment
-func GetListOfDislikeComment(db *sql.DB, commentid int) ([]int, error) {
+func GetListOfDislikeComment(db *sql.DB, commentid int) ([]User, error) {
 	sql_statement := `
-		SELECT userId
-		FROM likes_comments
-		WHERE commentId = $1 AND state = FALSE;
+		SELECT u.id, u.username
+		FROM likes_comments lc, users u
+		WHERE lc.commentId = $1 AND lc.state = FALSE AND lc.userId = u.id;
 	`
 
 	rows, err := db.Query(sql_statement, commentid)
@@ -186,11 +186,11 @@ func GetListOfDislikeComment(db *sql.DB, commentid int) ([]int, error) {
 	}
 	defer rows.Close()
 
-	var dislike_list []int
+	var dislike_list []User
 	for rows.Next() {
-		var userid int
-		rows.Scan(&userid)
-		dislike_list = append(dislike_list, userid)
+		var newUser User
+		rows.Scan(&newUser.Id, &newUser.Username)
+		dislike_list = append(dislike_list, newUser)
 	}
 
 	if rows.Err() != nil {

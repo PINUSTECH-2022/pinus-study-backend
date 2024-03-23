@@ -28,8 +28,14 @@ Get the list of users who like a certain thread
             ```json
             {
                 "likes": [
-                    1,
-                    2
+                    {
+                        "Id": 1,
+                        "Username": "firstUser"
+                    },
+                    {
+                        "Id": 2,
+                        "Username": "secondUser"
+                    }
                 ],
                 "status": "success"
             }
@@ -59,12 +65,18 @@ Get the list of users who dislike a certain thread
     2. When there are users (user 1 and user 2) who dislike the thread
         ```json
         {
-            "dislikes": [
-                1,
-                2
-            ],
-            "status": "success"
-        }
+                "dislikes": [
+                    {
+                        "Id": 1,
+                        "Username": "firstUser"
+                    },
+                    {
+                        "Id": 2,
+                        "Username": "secondUser"
+                    }
+                ],
+                "status": "success"
+            }
         ```
 
 ### Endpoint 3: /likes/comment/:commentid/likes
@@ -93,8 +105,14 @@ Get the list of users who like a certain comment
             ```json
             {
                 "likes": [
-                    1,
-                    2
+                    {
+                        "Id": 1,
+                        "Username": "firstUser"
+                    },
+                    {
+                        "Id": 2,
+                        "Username": "secondUser"
+                    }
                 ],
                 "status": "success"
             }
@@ -125,8 +143,14 @@ Get the list of users who dislike a certain comment
         ```json
         {
             "dislikes": [
-                1,
-                2
+                {
+                    "Id": 1,
+                    "Username": "firstUser"
+                },
+                {
+                    "Id": 2,
+                    "Username": "secondUser"
+                }
             ],
             "status": "success"
         }
