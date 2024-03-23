@@ -8,6 +8,7 @@ func SetupTable(db *sql.DB) {
 	tableDir := "sql/table/"
 	tableFiles := []string{
 		"users.sql",
+		"follows.sql",
 		"modules.sql",
 		"threads.sql",
 		"comments.sql",
