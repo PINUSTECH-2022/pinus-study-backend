@@ -43,6 +43,62 @@ func GetLikeThread(db *sql.DB) func(c *gin.Context) {
 	}
 }
 
+// Get the list of user who likes a certain thread
+func GetListOfLikeThread(db *sql.DB) func(c *gin.Context) {
+	return func(c *gin.Context) {
+		threadid, err := strconv.Atoi(c.Param("threadid"))
+		if err != nil {
+			c.JSON(http.StatusOK, gin.H{
+				"status": "failure",
+				"cause":  err.Error(),
+			})
+			return
+		}
+
+		listOfLike, err1 := database.GetListOfLikeThread(db, threadid)
+		if err1 != nil {
+			c.JSON(http.StatusOK, gin.H{
+				"status": "failure",
+				"cause":  err1.Error(),
+			})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{
+			"status": "success",
+			"likes":  listOfLike,
+		})
+	}
+}
+
+// Get the list of user who dislikes a certain thread
+func GetListOfDislikeThread(db *sql.DB) func(c *gin.Context) {
+	return func(c *gin.Context) {
+		threadid, err := strconv.Atoi(c.Param("threadid"))
+		if err != nil {
+			c.JSON(http.StatusOK, gin.H{
+				"status": "failure",
+				"cause":  err.Error(),
+			})
+			return
+		}
+
+		listOfDislike, err1 := database.GetListOfDislikeThread(db, threadid)
+		if err1 != nil {
+			c.JSON(http.StatusOK, gin.H{
+				"status": "failure",
+				"cause":  err1.Error(),
+			})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{
+			"status":   "success",
+			"dislikes": listOfDislike,
+		})
+	}
+}
+
 func SetLikeThread(db *sql.DB) func(c *gin.Context) {
 	return func(c *gin.Context) {
 		threadid, err := strconv.Atoi(c.Param("threadid"))
@@ -125,6 +181,62 @@ func GetLikeComment(db *sql.DB) func(c *gin.Context) {
 		}
 		c.JSON(http.StatusOK, gin.H{
 			"state": state,
+		})
+	}
+}
+
+// Get the list of user who likes a certain comment
+func GetListOfLikeComment(db *sql.DB) func(c *gin.Context) {
+	return func(c *gin.Context) {
+		commentid, err := strconv.Atoi(c.Param("commentid"))
+		if err != nil {
+			c.JSON(http.StatusOK, gin.H{
+				"status": "failure",
+				"cause":  err.Error(),
+			})
+			return
+		}
+
+		listOfLike, err1 := database.GetListOfLikeComment(db, commentid)
+		if err1 != nil {
+			c.JSON(http.StatusOK, gin.H{
+				"status": "failure",
+				"cause":  err1.Error(),
+			})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{
+			"status": "success",
+			"likes":  listOfLike,
+		})
+	}
+}
+
+// Get the list of user who dislikes a certain comment
+func GetListOfDislikeComment(db *sql.DB) func(c *gin.Context) {
+	return func(c *gin.Context) {
+		commentid, err := strconv.Atoi(c.Param("commentid"))
+		if err != nil {
+			c.JSON(http.StatusOK, gin.H{
+				"status": "failure",
+				"cause":  err.Error(),
+			})
+			return
+		}
+
+		listOfDislike, err1 := database.GetListOfDislikeComment(db, commentid)
+		if err1 != nil {
+			c.JSON(http.StatusOK, gin.H{
+				"status": "failure",
+				"cause":  err1.Error(),
+			})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{
+			"status":   "success",
+			"dislikes": listOfDislike,
 		})
 	}
 }

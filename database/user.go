@@ -15,6 +15,11 @@ type UserInfo struct {
 	Modules                []string
 }
 
+type User struct {
+	Id       int
+	Username string
+}
+
 func GetUserInfoByID(db *sql.DB, userid int) (UserInfo, error) {
 	var userInfo UserInfo
 	userInfo.Modules = []string{}
