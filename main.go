@@ -54,6 +54,8 @@ func main() {
 	r.GET("/comment/:id", router.GetCommentById(db))
 	r.DELETE("/comment/:id", middlewares.JwtAuthMiddleware(), router.DeleteCommentById(db))
 	r.PUT("/comment/:id", middlewares.JwtAuthMiddleware(), router.UpdateCommentById(db))
+	r.GET("/comment/:id", router.GetReviewCommentById(db))
+	r.DELETE("/comment/:id", middlewares.JwtAuthMiddleware(), router.DeleteReviewCommentById(db))
 
 	r.GET("/thread/:threadid", router.GetThreadById(db))
 	r.PUT("/thread/:threadid", router.EditThreadById(db))
@@ -78,6 +80,8 @@ func main() {
 	r.GET("/likes/comment/:commentid/dislikes", router.GetListOfDislikeComment(db))
 	r.GET("/likes/comment/:commentid/:userid", router.GetLikeComment(db))
 	r.POST("/likes/comment/:commentid/:userid/:state", middlewares.JwtAuthMiddleware(), router.SetLikeComment(db))
+	r.GET("/likes/review/:reviewid/:userid", router.GetLikeReview(db))
+	r.POST("/likes/review/:reviewid/:userid/:state", middlewares.JwtAuthMiddleware(), router.SetLikeReview(db))
 
 	r.GET("/review/:moduleid", router.GetReviewByModule(db))
 	r.POST("/review/:moduleid", middlewares.JwtAuthMiddleware(), router.PostReview(db))

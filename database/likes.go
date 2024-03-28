@@ -230,3 +230,59 @@ func ResetLikeComment(db *sql.DB, commentid int, userid int) error {
 	defer rows.Close()
 	return nil
 }
+
+func GetLikeReview(db *sql.DB, reviewid int, userid int) (int, error) {
+	rows, err := db.Query("SELECT state FROM Likes_reviews WHERE reviewid = $1 AND userid = $2", reviewid, userid)
+	if err != nil {
+		panic(err)
+	}
+	defer rows.Close()
+
+	result := 0
+	state := false
+
+	for rows.Next() {
+		err := rows.Scan(&state)
+		if state {
+			result = 1
+		} else {
+			result = -1
+		}
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	return result, nil
+}
+
+func SetLikeReview(db *sql.DB, state int, reviewid int, userid int) error {
+	ResetLikeThread(db, reviewid, userid)
+
+	if state == 0 {
+		return nil
+	}
+
+	var boolState bool
+	if state == 1 {
+		boolState = true
+	} else {
+		boolState = false
+	}
+
+	rows, err := db.Query("INSERT INTO Likes_Reviews (state, reviewid, userid) VALUES ($1, $2, $3)", boolState, reviewid, userid)
+	if err != nil {
+		return errors.New(err.Error())
+	}
+	defer rows.Close()
+	return nil
+}
+
+func ResetLikeReview(db *sql.DB, reviewid int, userid int) error {
+	rows, err := db.Query("DELETE FROM Likes_Reviews WHERE reviewid = $1 AND userid = $2", reviewid, userid)
+	if err != nil {
+		return errors.New(err.Error())
+	}
+	defer rows.Close()
+	return nil
+}
