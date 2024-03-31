@@ -111,3 +111,37 @@ func GetFollowings(db *sql.DB, userid int) ([]User, error) {
 
 	return followings, nil
 }
+
+// Get a list of thread id which is posted by the user's following
+func GetFollowersThreads(db *sql.DB, userid int) ([]int, error) {
+	sql_statement := `
+	SELECT t.id
+	FROM threads t, follows f
+	WHERE f.followerid = $1 AND f.followingid = t.authorid AND NOT t.is_deleted;
+	`
+
+	rows, err := db.Query(sql_statement, userid)
+	if err != nil {
+		fmt.Println(err.Error())
+		return nil, errors.New("something went wrong when getting followings' threads")
+	}
+	defer rows.Close()
+
+	var threads []int
+	for rows.Next() {
+		var threadid int
+		err1 := rows.Scan(&threadid)
+		if err1 != nil {
+			fmt.Println(err.Error())
+			return nil, errors.New("something went wrong when getting followings' threads")
+		}
+		threads = append(threads, threadid)
+	}
+
+	if rows.Err() != nil {
+		fmt.Println(err.Error())
+		return nil, errors.New("something went wrong when getting followings' threads")
+	}
+
+	return threads, nil
+}
