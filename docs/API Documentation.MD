@@ -22,7 +22,7 @@ Get the list of threads posted by users followed by a certain user.
             ```json
             {
                 "status": "success",
-                "threads": null
+                "threads": []
             }
             ```
         2. When there are threads (thread 1 and thread 2) posted by users followed by the user specified in the request
@@ -57,7 +57,7 @@ Get the list of users who like a certain thread.
         1. In the absence of any user liking the thread
             ```json
             {
-                "likes": null,
+                "likes": [],
                 "status": "success"
             }
             ```
@@ -98,7 +98,7 @@ Get the list of users who dislike a certain thread.
     1. In the absence of any user disliking the thread
         ```json
         {
-            "dislikes": null,
+            "dislikes": [],
             "status": "success"
         }
         ```
@@ -138,7 +138,7 @@ Get the list of users who like a certain comment.
         1. In the absence of any user liking the comment
             ```json
             {
-                "likes": null,
+                "likes": [],
                 "status": "success"
             }
             ```
@@ -179,7 +179,7 @@ Get the list of users who dislike a certain comment.
     1. In the absence of any user disliking the comment
         ```json
         {
-            "dislikes": null,
+            "dislikes": [],
             "status": "success"
         }
         ```

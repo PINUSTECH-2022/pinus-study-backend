@@ -157,7 +157,7 @@ func GetFollowingsThread(db *sql.DB) func(c *gin.Context) {
 			return
 		}
 
-		threads, err1 := database.GetFollowersThreads(db, userId)
+		threads, err1 := database.GetFollowingsThreads(db, userId)
 		if err1 != nil {
 			c.JSON(http.StatusOK, gin.H{
 				"status": "failure",

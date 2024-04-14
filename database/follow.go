@@ -113,7 +113,7 @@ func GetFollowings(db *sql.DB, userid int) ([]User, error) {
 }
 
 // Get a list of thread id which is posted by the user's following
-func GetFollowersThreads(db *sql.DB, userid int) ([]int, error) {
+func GetFollowingsThreads(db *sql.DB, userid int) ([]int, error) {
 	sql_statement := `
 	SELECT t.id
 	FROM threads t, follows f
@@ -127,7 +127,7 @@ func GetFollowersThreads(db *sql.DB, userid int) ([]int, error) {
 	}
 	defer rows.Close()
 
-	var threads []int
+	threads := []int{}
 	for rows.Next() {
 		var threadid int
 		err1 := rows.Scan(&threadid)
