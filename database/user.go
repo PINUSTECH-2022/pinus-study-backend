@@ -7,19 +7,21 @@ import (
 	_ "github.com/lib/pq"
 )
 
+type User struct {
+	Id       int
+	Username string
+}
+
 type UserInfo struct {
 	Username               string
+	Followers              []User
+	Following              []User
 	NumberOfFollowers      int
 	NumberOfFollowing      int
 	NumberOfQuestionsAsked int
 	NumberOfLikesReceived  int
 	RecentThreads          []Thread
 	Modules                []string
-}
-
-type User struct {
-	Id       int
-	Username string
 }
 
 func GetUserInfoByID(db *sql.DB, userid int) (UserInfo, error) {
@@ -104,41 +106,20 @@ func GetUserInfoByID(db *sql.DB, userid int) (UserInfo, error) {
 		}
 	}
 
-	sql_statement4 := `
-	SELECT COUNT(*) FROM (
-		SELECT f.followerid, u.username
-		FROM follows f, users u
-		WHERE f.followerid = u.id AND f.followingid = $1
-	) AS followers
-	`
-	rows4, err4 := db.Query(sql_statement4, userid)
+	followers, err4 := GetFollowers(db, userid)
 	if err4 != nil {
 		panic(err4)
 	}
-	defer rows4.Close()
 
-	var followers int
-	rows4.Next()
-	rows4.Scan(&followers)
-	userInfo.NumberOfFollowers = followers
-
-	sql_statement5 := `
-	SELECT COUNT(*) FROM (
-		SELECT f.followingid, u.username
-		FROM follows f, users u
-		WHERE f.followingid = u.id AND f.followerid = $1
-	) AS following
-	`
-	rows5, err5 := db.Query(sql_statement5, userid)
+	following, err5 := GetFollowings(db, userid)
 	if err5 != nil {
 		panic(err5)
 	}
-	defer rows5.Close()
 
-	var following int
-	rows5.Next()
-	rows5.Scan(&following)
-	userInfo.NumberOfFollowing = following
+	userInfo.Followers = followers
+	userInfo.Following = following
+	userInfo.NumberOfFollowers = len(followers)
+	userInfo.NumberOfFollowing = len(following)
 
 	return userInfo, nil
 }

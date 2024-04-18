@@ -139,8 +139,8 @@ func GetFollowings(db *sql.DB) func(c *gin.Context) {
 		}
 
 		c.JSON(http.StatusOK, gin.H{
-			"status":    "success",
-			"followers": following,
+			"status":     "success",
+			"followings": following,
 		})
 	}
 }
