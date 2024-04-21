@@ -333,3 +333,24 @@ func GetRecoverPassword(db *sql.DB, recoveryId int, secretCode string) (bool, bo
 
 	return isMatch, isExpired, isUsed, nil
 }
+
+// Recover the password return whether the password recovery exist, expired, match, or used
+func RecoverPassword(db *sql.DB, recoveryId int, secretCode string, newPassword string) (bool, bool, bool, bool, error) {
+	sql_statement := `
+	CALL recover_password($1, $2, $3, $4, $5, $6, $7, $8);
+	`
+
+	var isExist, isExpired, isMatch, used bool
+
+	newSalt := generateRandomSalt()
+	newSaltString := hex.EncodeToString(newSalt)
+	newEncryptedPassword := hashPassword(newPassword, []byte(newSalt))
+
+	err := db.QueryRow(sql_statement, recoveryId, secretCode, newEncryptedPassword, newSaltString, &isExist, &isExpired, &isMatch, &used).
+		Scan(&isExist, &isExpired, &isMatch, &used)
+	if err != nil {
+		panic(err)
+	}
+
+	return isExist, isExpired, isMatch, used, nil
+}
