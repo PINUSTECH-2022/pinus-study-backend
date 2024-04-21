@@ -15,6 +15,11 @@ type UserInfo struct {
 	Modules                []string
 }
 
+type User struct {
+	Id       int
+	Username string
+}
+
 func GetUserInfoByID(db *sql.DB, userid int) (UserInfo, error) {
 	var userInfo UserInfo
 	userInfo.Modules = []string{}
@@ -202,4 +207,23 @@ func getUserIdFromNameOrEmail(db *sql.DB, nameOrEmail string) (int, error) {
 	}
 
 	return userid, nil
+}
+
+func ChangeUsername(db *sql.DB, userid int, newUsername string) error {
+	sql_statement := `
+	UPDATE Users
+	SET username = $1
+	WHERE id = $2
+	`
+
+	if !IsUsernameAvailable(db, newUsername) {
+		return errors.New("Username already exists!")
+	}
+
+	_, err := db.Exec(sql_statement, newUsername, userid)
+	if err != nil {
+		panic(err)
+	}
+
+	return nil
 }

@@ -41,6 +41,12 @@ func main() {
 	r.GET("/user/:userid", router.GetUserInfoByID(db))
 
 	r.POST("/user/change_password/:userid", middlewares.JwtAuthMiddleware(), router.ChangePassword(db))
+	r.PUT("/user/change_username/:userid", middlewares.JwtAuthMiddleware(), router.ChangeUsername(db))
+
+	r.POST("/follow/:userid", middlewares.JwtAuthMiddleware(), router.FollowUser(db))
+	r.DELETE("/follow/:userid", middlewares.JwtAuthMiddleware(), router.UnfollowUser(db))
+	r.GET("/follow/followers/:userid", router.GetFollowers(db))
+	r.GET("/follow/followings/:userid", router.GetFollowings(db))
 
 	r.POST("/module", router.GetModules(db))
 	r.GET("/module/:moduleid", router.GetModuleByModuleId(db))
@@ -65,8 +71,12 @@ func main() {
 	r.POST("/subscribes/:moduleid/:userid", middlewares.JwtAuthMiddleware(), router.Subscribe(db))
 	r.DELETE("/subscribes/:moduleid/:userid", middlewares.JwtAuthMiddleware(), router.Unsubscribe(db))
 
+	r.GET("/likes/thread/:threadid/likes", router.GetListOfLikeThread(db))
+	r.GET("/likes/thread/:threadid/dislikes", router.GetListOfDislikeThread(db))
 	r.GET("/likes/thread/:threadid/:userid", router.GetLikeThread(db))
 	r.POST("/likes/thread/:threadid/:userid/:state", middlewares.JwtAuthMiddleware(), router.SetLikeThread(db))
+	r.GET("/likes/comment/:commentid/likes", router.GetListOfLikeComment(db))
+	r.GET("/likes/comment/:commentid/dislikes", router.GetListOfDislikeComment(db))
 	r.GET("/likes/comment/:commentid/:userid", router.GetLikeComment(db))
 	r.POST("/likes/comment/:commentid/:userid/:state", middlewares.JwtAuthMiddleware(), router.SetLikeComment(db))
 

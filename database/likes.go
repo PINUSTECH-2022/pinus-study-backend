@@ -32,6 +32,62 @@ func GetLikeThread(db *sql.DB, threadid int, userid int) (int, error) {
 	return result, nil
 }
 
+// Get the list of user who like a certain thread
+func GetListOfLikeThread(db *sql.DB, threadid int) ([]User, error) {
+	sql_statement := `
+		SELECT u.id, u.username
+		FROM likes_threads lt, users u
+		WHERE lt.threadId = $1 AND lt.state = TRUE AND lt.userId = u.id;
+	`
+
+	rows, err := db.Query(sql_statement, threadid)
+	if err != nil {
+		panic(err)
+	}
+	defer rows.Close()
+
+	var like_list []User
+	for rows.Next() {
+		var newUser User
+		rows.Scan(&newUser.Id, &newUser.Username)
+		like_list = append(like_list, newUser)
+	}
+
+	if rows.Err() != nil {
+		panic(rows.Err())
+	}
+
+	return like_list, nil
+}
+
+// Get the list of user who dislike a certain thread
+func GetListOfDislikeThread(db *sql.DB, threadid int) ([]User, error) {
+	sql_statement := `
+		SELECT u.id, u.username
+		FROM likes_threads lt, users u
+		WHERE lt.threadId = $1 AND lt.state = FALSE AND lt.userId = u.id;
+	`
+
+	rows, err := db.Query(sql_statement, threadid)
+	if err != nil {
+		panic(err)
+	}
+	defer rows.Close()
+
+	var dislike_list []User
+	for rows.Next() {
+		var newUser User
+		rows.Scan(&newUser.Id, &newUser.Username)
+		dislike_list = append(dislike_list, newUser)
+	}
+
+	if rows.Err() != nil {
+		panic(rows.Err())
+	}
+
+	return dislike_list, nil
+}
+
 func SetLikeThread(db *sql.DB, state int, threadid int, userid int) error {
 	ResetLikeThread(db, threadid, userid)
 
@@ -86,6 +142,62 @@ func GetLikeComment(db *sql.DB, commentid int, userid int) (int, error) {
 	}
 
 	return result, nil
+}
+
+// Get the list of user who like a certain comment
+func GetListOfLikeComment(db *sql.DB, commentid int) ([]User, error) {
+	sql_statement := `
+		SELECT u.id, u.username
+		FROM likes_comments lc, users u
+		WHERE lc.commentId = $1 AND lc.state = TRUE AND lc.userId = u.id;
+	`
+
+	rows, err := db.Query(sql_statement, commentid)
+	if err != nil {
+		panic(err)
+	}
+	defer rows.Close()
+
+	var like_list []User
+	for rows.Next() {
+		var newUser User
+		rows.Scan(&newUser.Id, &newUser.Username)
+		like_list = append(like_list, newUser)
+	}
+
+	if rows.Err() != nil {
+		panic(rows.Err())
+	}
+
+	return like_list, nil
+}
+
+// Get the list of user who dislike a certain comment
+func GetListOfDislikeComment(db *sql.DB, commentid int) ([]User, error) {
+	sql_statement := `
+		SELECT u.id, u.username
+		FROM likes_comments lc, users u
+		WHERE lc.commentId = $1 AND lc.state = FALSE AND lc.userId = u.id;
+	`
+
+	rows, err := db.Query(sql_statement, commentid)
+	if err != nil {
+		panic(err)
+	}
+	defer rows.Close()
+
+	var dislike_list []User
+	for rows.Next() {
+		var newUser User
+		rows.Scan(&newUser.Id, &newUser.Username)
+		dislike_list = append(dislike_list, newUser)
+	}
+
+	if rows.Err() != nil {
+		panic(rows.Err())
+	}
+
+	return dislike_list, nil
 }
 
 func SetLikeComment(db *sql.DB, state int, commentid int, userid int) error {
