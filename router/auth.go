@@ -377,7 +377,7 @@ func ChangePassword(db *sql.DB) func(c *gin.Context) {
 }
 
 // Sends the email verification link to the user's email
-func sendPasswordRecovery(userid int, recoveryId int, email string, secretCode string) error {
+func sendPasswordRecovery(recoveryId int, email string, secretCode string) error {
 	err := godotenv.Load(".env")
 
 	if err != nil {
@@ -413,17 +413,21 @@ func sendPasswordRecovery(userid int, recoveryId int, email string, secretCode s
 // Forgot password to create password recovery and send it via email
 func ForgotPassword(db *sql.DB) func(c *gin.Context) {
 	return func(c *gin.Context) {
-		userId, err := strconv.Atoi(c.Param("userid"))
+		var User struct {
+			Email string `json:"email" binding:"required"`
+		}
+
+		err := c.ShouldBindJSON(&User)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{
 				"status": "failure",
-				"cause":  "userid is malformed",
+				"cause":  "JSON request body is malformed",
 			})
 			return
 		}
 
 		secretCode := util.RandomString(32)
-		isExist, isVerified, recoveryId, email, err1 := database.MakePasswordRecovery(db, userId, secretCode)
+		isExist, isVerified, recoveryId, email, err1 := database.MakePasswordRecovery(db, User.Email, secretCode)
 		if err1 != nil {
 			c.JSON(http.StatusOK, gin.H{
 				"status": "failure",
@@ -448,7 +452,7 @@ func ForgotPassword(db *sql.DB) func(c *gin.Context) {
 			return
 		}
 
-		err2 := sendPasswordRecovery(userId, recoveryId, email, secretCode)
+		err2 := sendPasswordRecovery(recoveryId, email, secretCode)
 		if err2 != nil {
 			c.JSON(http.StatusOK, gin.H{
 				"status": "failure",

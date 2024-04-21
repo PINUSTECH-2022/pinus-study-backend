@@ -302,19 +302,34 @@ func UpdatePassword(db *sql.DB, userid int, newPassword string) (bool, error) {
 }
 
 // Make password recovery returning whether the user exist, has been verified, the recovery id, and the user's email
-func MakePasswordRecovery(db *sql.DB, userid int, secretCode string) (bool, bool, int, string, error) {
+func MakePasswordRecovery(db *sql.DB, email string, secretCode string) (bool, bool, int, string, error) {
+	sql_get_user_id := `
+	SELECT u.id
+	FROM users u
+	WHERE u.email = $1
+	`
+
+	var userid int
+	err := db.QueryRow(sql_get_user_id, email).Scan(&userid)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return false, false, -1, "", errors.New("email does not exist")
+		}
+		return false, false, -1, "", errors.New("something went wrong")
+	}
+
 	sql_statement := `
 	CALL make_password_recovery($1, $2, $3, $4, $5, $6);
 	`
 
 	var isExist, isVerified bool
 	var recoveryId int
-	var email string
-	err := db.QueryRow(sql_statement, userid, secretCode, &isExist, &isVerified, &recoveryId, &email).Scan(&isExist, &isVerified, &recoveryId, &email)
-	if err != nil {
-		panic(err)
+	var email2 string
+	err2 := db.QueryRow(sql_statement, userid, secretCode, &isExist, &isVerified, &recoveryId, &email2).Scan(&isExist, &isVerified, &recoveryId, &email2)
+	if err2 != nil {
+		return false, false, -1, "", errors.New("something went wrong")
 	}
-	return isExist, isVerified, recoveryId, email, nil
+	return isExist, isVerified, recoveryId, email2, nil
 }
 
 // Get whether the recoveryId and secretCode match, expired, and used
