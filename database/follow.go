@@ -61,7 +61,7 @@ func GetFollowers(db *sql.DB, userid int) ([]User, error) {
 	}
 	defer rows.Close()
 
-	var followers []User
+	var followers []User = []User{}
 	for rows.Next() {
 		var follower User
 		err := rows.Scan(&follower.Id, &follower.Username)
@@ -93,7 +93,7 @@ func GetFollowings(db *sql.DB, userid int) ([]User, error) {
 	}
 	defer rows.Close()
 
-	var followings []User
+	var followings []User = []User{}
 	for rows.Next() {
 		var following User
 		err := rows.Scan(&following.Id, &following.Username)
