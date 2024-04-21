@@ -14,6 +14,20 @@ type Follow struct {
 	Timestamp   string
 }
 
+type ThreadInfo struct {
+	Id            int
+	Title         string
+	Content       string
+	AuthorId      int
+	Username      string
+	Timestamp     string
+	ModuleId      string
+	LikesCount    int
+	DislikesCount int
+	CommentsCount int
+	IsDeleted     bool
+}
+
 func FollowUser(db *sql.DB, followerid int, followingid int) error {
 	sql_query := `
 	INSERT INTO follows (followerid, followingid)
@@ -113,9 +127,9 @@ func GetFollowings(db *sql.DB, userid int) ([]User, error) {
 }
 
 // Get a list of thread id which is posted by the user's following
-func GetFollowingsThreads(db *sql.DB, userid int) ([]int, error) {
+func GetFollowingsThreads(db *sql.DB, userid int) ([]ThreadInfo, error) {
 	sql_statement := `
-	SELECT t.id
+	SELECT t.id, t.title, t.content, t.moduleid, t.authorid, t.timestamp, t.is_deleted,  t.likes_count, t.dislikes_count, t.comments_count
 	FROM threads t, follows f
 	WHERE f.followerid = $1 AND f.followingid = t.authorid AND NOT t.is_deleted;
 	`
@@ -127,15 +141,16 @@ func GetFollowingsThreads(db *sql.DB, userid int) ([]int, error) {
 	}
 	defer rows.Close()
 
-	threads := []int{}
+	threads := []ThreadInfo{}
+	var thread ThreadInfo
 	for rows.Next() {
-		var threadid int
-		err1 := rows.Scan(&threadid)
+		err1 := rows.Scan(&thread.Id, &thread.Title, &thread.Content, &thread.ModuleId, &thread.AuthorId, &thread.Timestamp,
+			&thread.IsDeleted, &thread.LikesCount, &thread.DislikesCount, &thread.CommentsCount)
 		if err1 != nil {
 			fmt.Println(err.Error())
 			return nil, errors.New("something went wrong when getting followings' threads")
 		}
-		threads = append(threads, threadid)
+		threads = append(threads, thread)
 	}
 
 	if rows.Err() != nil {
