@@ -215,3 +215,20 @@ func GetSemester(db *sql.DB) func(c *gin.Context) {
 		})
 	}
 }
+
+func GetReviewByUser(db *sql.DB) func(c *gin.Context) {
+	return func(c *gin.Context) {
+		userId, convErr := strconv.Atoi(c.Param("userid"))
+		if convErr != nil {
+			c.JSON(http.StatusOK, gin.H{
+				"status": "failure",
+				"cause":  convErr.Error(),
+			})
+			return
+		}
+		review := database.GetReviewByUser(db, userId)
+		c.JSON(http.StatusOK, gin.H{
+			"review": review,
+		})
+	}
+}
