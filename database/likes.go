@@ -46,7 +46,7 @@ func GetListOfLikeThread(db *sql.DB, threadid int) ([]User, error) {
 	}
 	defer rows.Close()
 
-	var like_list []User
+	like_list := []User{}
 	for rows.Next() {
 		var newUser User
 		rows.Scan(&newUser.Id, &newUser.Username)
@@ -74,7 +74,7 @@ func GetListOfDislikeThread(db *sql.DB, threadid int) ([]User, error) {
 	}
 	defer rows.Close()
 
-	var dislike_list []User
+	dislike_list := []User{}
 	for rows.Next() {
 		var newUser User
 		rows.Scan(&newUser.Id, &newUser.Username)
@@ -158,7 +158,7 @@ func GetListOfLikeComment(db *sql.DB, commentid int) ([]User, error) {
 	}
 	defer rows.Close()
 
-	var like_list []User
+	like_list := []User{}
 	for rows.Next() {
 		var newUser User
 		rows.Scan(&newUser.Id, &newUser.Username)
@@ -186,7 +186,7 @@ func GetListOfDislikeComment(db *sql.DB, commentid int) ([]User, error) {
 	}
 	defer rows.Close()
 
-	var dislike_list []User
+	dislike_list := []User{}
 	for rows.Next() {
 		var newUser User
 		rows.Scan(&newUser.Id, &newUser.Username)

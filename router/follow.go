@@ -144,3 +144,31 @@ func GetFollowings(db *sql.DB) func(c *gin.Context) {
 		})
 	}
 }
+
+// Get a list of thread id which is posted by the user's following
+func GetFollowingsThread(db *sql.DB) func(c *gin.Context) {
+	return func(c *gin.Context) {
+		userId, err := strconv.Atoi(c.Param("userid"))
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"status": "failure",
+				"cause":  "Followings' thread request failed",
+			})
+			return
+		}
+
+		threads, err1 := database.GetFollowingsThreads(db, userId)
+		if err1 != nil {
+			c.JSON(http.StatusOK, gin.H{
+				"status": "failure",
+				"cause":  err1.Error(),
+			})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{
+			"status":  "success",
+			"threads": threads,
+		})
+	}
+}
