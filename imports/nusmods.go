@@ -19,7 +19,7 @@ type modules struct {
 }
 
 func GetDbNusMods() *sql.DB {
-	err := godotenv.Load(".env")
+	err := godotenv.Load()
 
 	if err != nil {
 		panic(err)
