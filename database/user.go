@@ -7,17 +7,21 @@ import (
 	_ "github.com/lib/pq"
 )
 
+type User struct {
+	Id       int
+	Username string
+}
+
 type UserInfo struct {
 	Username               string
+	Followers              []User
+	Following              []User
+	NumberOfFollowers      int
+	NumberOfFollowing      int
 	NumberOfQuestionsAsked int
 	NumberOfLikesReceived  int
 	RecentThreads          []Thread
 	Modules                []string
-}
-
-type User struct {
-	Id       int
-	Username string
 }
 
 func GetUserInfoByID(db *sql.DB, userid int) (UserInfo, error) {
@@ -101,6 +105,21 @@ func GetUserInfoByID(db *sql.DB, userid int) (UserInfo, error) {
 			userInfo.RecentThreads = append(userInfo.RecentThreads, thread)
 		}
 	}
+
+	followers, err4 := GetFollowers(db, userid)
+	if err4 != nil {
+		panic(err4)
+	}
+
+	following, err5 := GetFollowings(db, userid)
+	if err5 != nil {
+		panic(err5)
+	}
+
+	userInfo.Followers = followers
+	userInfo.Following = following
+	userInfo.NumberOfFollowers = len(followers)
+	userInfo.NumberOfFollowing = len(following)
 
 	return userInfo, nil
 }
