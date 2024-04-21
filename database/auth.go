@@ -302,19 +302,34 @@ func UpdatePassword(db *sql.DB, userid int, newPassword string) (bool, error) {
 }
 
 // Make password recovery returning whether the user exist, has been verified, the recovery id, and the user's email
-func MakePasswordRecovery(db *sql.DB, userid int, secretCode string) (bool, bool, int, string, error) {
+func MakePasswordRecovery(db *sql.DB, email string, secretCode string) (bool, bool, int, string, error) {
+	sql_get_user_id := `
+	SELECT u.id
+	FROM users u
+	WHERE u.email = $1
+	`
+
+	var userid int
+	err := db.QueryRow(sql_get_user_id, email).Scan(&userid)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return false, false, -1, "", errors.New("email does not exist")
+		}
+		return false, false, -1, "", errors.New("something went wrong")
+	}
+
 	sql_statement := `
 	CALL make_password_recovery($1, $2, $3, $4, $5, $6);
 	`
 
 	var isExist, isVerified bool
 	var recoveryId int
-	var email string
-	err := db.QueryRow(sql_statement, userid, secretCode, &isExist, &isVerified, &recoveryId, &email).Scan(&isExist, &isVerified, &recoveryId, &email)
-	if err != nil {
-		panic(err)
+	var email2 string
+	err2 := db.QueryRow(sql_statement, userid, secretCode, &isExist, &isVerified, &recoveryId, &email2).Scan(&isExist, &isVerified, &recoveryId, &email2)
+	if err2 != nil {
+		return false, false, -1, "", errors.New("something went wrong")
 	}
-	return isExist, isVerified, recoveryId, email, nil
+	return isExist, isVerified, recoveryId, email2, nil
 }
 
 // Get whether the recoveryId and secretCode match, expired, and used
@@ -332,4 +347,25 @@ func GetRecoverPassword(db *sql.DB, recoveryId int, secretCode string) (bool, bo
 	}
 
 	return isMatch, isExpired, isUsed, nil
+}
+
+// Recover the password return whether the password recovery exist, expired, match, or used
+func RecoverPassword(db *sql.DB, recoveryId int, secretCode string, newPassword string) (bool, bool, bool, bool, error) {
+	sql_statement := `
+	CALL recover_password($1, $2, $3, $4, $5, $6, $7, $8);
+	`
+
+	var isExist, isExpired, isMatch, used bool
+
+	newSalt := generateRandomSalt()
+	newSaltString := hex.EncodeToString(newSalt)
+	newEncryptedPassword := hashPassword(newPassword, []byte(newSalt))
+
+	err := db.QueryRow(sql_statement, recoveryId, secretCode, newEncryptedPassword, newSaltString, &isExist, &isExpired, &isMatch, &used).
+		Scan(&isExist, &isExpired, &isMatch, &used)
+	if err != nil {
+		panic(err)
+	}
+
+	return isExist, isExpired, isMatch, used, nil
 }
