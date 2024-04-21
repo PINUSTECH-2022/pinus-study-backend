@@ -11,7 +11,7 @@ import (
 
 // Loads Database URI from .env file
 func loadDbUri() string {
-	err := godotenv.Load(".env")
+	err := godotenv.Load()
 
 	if err != nil {
 		panic(err)

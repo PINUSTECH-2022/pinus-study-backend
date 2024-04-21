@@ -163,7 +163,7 @@ func LogIn(db *sql.DB) func(c *gin.Context) {
 
 // Sends the email verification link to the user's email
 func sendVerification(userid int, emailid int, email string, username string, secretCode string) error {
-	err := godotenv.Load(".env")
+	err := godotenv.Load("")
 
 	if err != nil {
 		panic(err)
@@ -378,7 +378,7 @@ func ChangePassword(db *sql.DB) func(c *gin.Context) {
 
 // Sends the email verification link to the user's email
 func sendPasswordRecovery(userid int, recoveryId int, email string, secretCode string) error {
-	err := godotenv.Load(".env")
+	err := godotenv.Load("")
 
 	if err != nil {
 		panic(err)
