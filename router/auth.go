@@ -169,7 +169,7 @@ func sendVerification(userid int, emailid int, email string, username string, se
 	emailSenderPassword := os.Getenv("EMAIL_SENDER_PASSWORD")
 
 	if frontendUrl != "" {
-		err := godotenv.Load("")
+		err := godotenv.Load(".env")
 
 		if err != nil {
 			panic(err)
@@ -391,7 +391,7 @@ func sendPasswordRecovery(userid int, recoveryId int, email string, secretCode s
 	emailSenderPassword := os.Getenv("EMAIL_SENDER_PASSWORD")
 
 	if frontendUrl != "" {
-		err := godotenv.Load("")
+		err := godotenv.Load(".env")
 
 		if err != nil {
 			panic(err)

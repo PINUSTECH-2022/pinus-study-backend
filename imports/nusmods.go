@@ -22,7 +22,7 @@ func GetDbNusMods() *sql.DB {
 	dbUri := os.Getenv("DATABASE_URI")
 
 	if dbUri == "" {
-		err := godotenv.Load()
+		err := godotenv.Load(".env")
 
 		if err != nil {
 			panic(err)
