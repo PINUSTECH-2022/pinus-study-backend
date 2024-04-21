@@ -386,12 +386,6 @@ func ChangePassword(db *sql.DB) func(c *gin.Context) {
 // Sends the email verification link to the user's email
 
 func sendPasswordRecovery(recoveryId int, email string, secretCode string) error {
-	err := godotenv.Load("")
-
-	if err != nil {
-		panic(err)
-	}
-  
 	frontendUrl := os.Getenv("FRONTEND_URL")
 	emailSenderName := os.Getenv("EMAIL_SENDER_NAME")
 	emailSenderAddress := os.Getenv("EMAIL_SENDER_ADDRESS")
