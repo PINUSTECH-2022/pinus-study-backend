@@ -52,6 +52,35 @@ func GetReviewByModule(db *sql.DB, moduleId string) []Review {
 	return reviews
 }
 
+func GetReviewByUser(db *sql.DB, userId int) []Review {
+	rows, err := db.Query(`SELECT R.moduleId, R.userId, R.timestamp, R.workload, 
+		R.expectedGrade, R.actualGrade, R.difficulty, R.semesterTaken, R.lecturer, 
+		R.content, R.suggestion, U.username
+		FROM Reviews AS R, Users AS U
+		WHERE R.userId = $1 AND R.userId = U.id AND R.is_deleted = false`,
+		userId)
+	if err != nil {
+		panic(err)
+	}
+	defer rows.Close()
+
+	var reviews []Review
+	for rows.Next() {
+		var review Review
+		err := rows.Scan(&review.ModuleId, &review.UserId, &review.Timestamp, &review.Workload,
+			&review.ExpectedGrade, &review.ActualGrade, &review.Difficulty, &review.SemesterTaken,
+			&review.Lecturer, &review.Content, &review.Suggestion, &review.Username)
+		if err != nil {
+			panic(err)
+		}
+		reviews = append(reviews, review)
+	}
+	if rows.Err() != nil {
+		panic(err)
+	}
+	return reviews
+}
+
 func GetReviewByModuleAndUser(db *sql.DB, moduleId string, userId int) (bool, Review) {
 	rows, err := db.Query(`SELECT R.moduleId, R.userId, R.timestamp, R.workload, 
 		R.expectedGrade, R.actualGrade, R.difficulty, R.semesterTaken, R.lecturer, 
