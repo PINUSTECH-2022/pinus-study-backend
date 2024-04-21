@@ -19,13 +19,18 @@ type modules struct {
 }
 
 func GetDbNusMods() *sql.DB {
-	err := godotenv.Load()
+	dbUri := os.Getenv("DATABASE_URI")
 
-	if err != nil {
-		panic(err)
+	if dbUri == "" {
+		err := godotenv.Load()
+
+		if err != nil {
+			panic(err)
+		}
+
+		dbUri = os.Getenv("DATABASE_URI")
 	}
 
-	dbUri := os.Getenv("DATABASE_URI")
 	db, err := sql.Open("postgres", dbUri)
 	if err != nil {
 		panic(err)

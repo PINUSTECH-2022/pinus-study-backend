@@ -11,15 +11,25 @@ import (
 
 // Loads Database URI from .env file
 func loadDbUri() string {
+
+	dbUri := os.Getenv("DATABASE_URI")
+
+	log.Printf("TESSSSTTT: %s", dbUri)
+
+	if dbUri != "" {
+		return dbUri
+	}
+
 	err := godotenv.Load()
 
 	if err != nil {
 		panic(err)
 	}
 
-	log.Printf("Env value: %s", os.Getenv("DATABASE_URI"))
+	dbUri = os.Getenv("DATABASE_URI")
+	log.Printf("Env value: %s", dbUri)
 
-	return os.Getenv("DATABASE_URI")
+	return dbUri
 }
 
 func GetDb() *sql.DB {

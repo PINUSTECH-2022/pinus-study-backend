@@ -163,16 +163,23 @@ func LogIn(db *sql.DB) func(c *gin.Context) {
 
 // Sends the email verification link to the user's email
 func sendVerification(userid int, emailid int, email string, username string, secretCode string) error {
-	err := godotenv.Load("")
-
-	if err != nil {
-		panic(err)
-	}
-
 	frontendUrl := os.Getenv("FRONTEND_URL")
 	emailSenderName := os.Getenv("EMAIL_SENDER_NAME")
 	emailSenderAddress := os.Getenv("EMAIL_SENDER_ADDRESS")
 	emailSenderPassword := os.Getenv("EMAIL_SENDER_PASSWORD")
+
+	if frontendUrl != "" {
+		err := godotenv.Load("")
+
+		if err != nil {
+			panic(err)
+		}
+
+		frontendUrl = os.Getenv("FRONTEND_URL")
+		emailSenderName = os.Getenv("EMAIL_SENDER_NAME")
+		emailSenderAddress = os.Getenv("EMAIL_SENDER_ADDRESS")
+		emailSenderPassword = os.Getenv("EMAIL_SENDER_PASSWORD")
+	}
 
 	subject := "Welcome to PINUS STUDY!"
 	verifyUrl := fmt.Sprintf("%s/verify_email?email_id=%d&secret_code=%s", frontendUrl, emailid, secretCode)
@@ -378,16 +385,23 @@ func ChangePassword(db *sql.DB) func(c *gin.Context) {
 
 // Sends the email verification link to the user's email
 func sendPasswordRecovery(userid int, recoveryId int, email string, secretCode string) error {
-	err := godotenv.Load("")
-
-	if err != nil {
-		panic(err)
-	}
-
 	frontendUrl := os.Getenv("FRONTEND_URL")
 	emailSenderName := os.Getenv("EMAIL_SENDER_NAME")
 	emailSenderAddress := os.Getenv("EMAIL_SENDER_ADDRESS")
 	emailSenderPassword := os.Getenv("EMAIL_SENDER_PASSWORD")
+
+	if frontendUrl != "" {
+		err := godotenv.Load("")
+
+		if err != nil {
+			panic(err)
+		}
+
+		frontendUrl = os.Getenv("FRONTEND_URL")
+		emailSenderName = os.Getenv("EMAIL_SENDER_NAME")
+		emailSenderAddress = os.Getenv("EMAIL_SENDER_ADDRESS")
+		emailSenderPassword = os.Getenv("EMAIL_SENDER_PASSWORD")
+	}
 
 	subject := "Password Reset Request: Action Required for Your PINUS STUDY Account"
 	recoveryUrl := fmt.Sprintf("%s/password_recovery?recovery_id=%d&secret_code=%s", frontendUrl, recoveryId, secretCode)
