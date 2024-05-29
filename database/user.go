@@ -151,7 +151,7 @@ func getUserId(db *sql.DB) int {
 }
 
 func IsEmailAvailable(db *sql.DB, email string) bool {
-	rows, _ := db.Query("SELECT email FROM Users WHERE email = $1", email)
+	rows, _ := db.Query("SELECT email FROM Users WHERE LOWER(email) = LOWER($1);", email)
 	for rows.Next() {
 		return false
 	}
@@ -159,7 +159,7 @@ func IsEmailAvailable(db *sql.DB, email string) bool {
 }
 
 func IsUsernameAvailable(db *sql.DB, username string) bool {
-	rows, _ := db.Query("SELECT username FROM Users WHERE username = $1", username)
+	rows, _ := db.Query("SELECT username FROM Users WHERE LOWER(username) = LOWER($1)", username)
 	for rows.Next() {
 		return false
 	}
@@ -201,7 +201,7 @@ func getUserIdFromNameOrEmail(db *sql.DB, nameOrEmail string) (int, error) {
 	sql_statement := `
 	SELECT u.id
 	FROM Users u
-	WHERE u.username = $1 OR u.email = $1
+	WHERE LOWER(u.username) = LOWER($1) OR LOWER(u.email) = LOWER($1);
 	`
 	rows, err := db.Query(sql_statement, nameOrEmail)
 	if err != nil {

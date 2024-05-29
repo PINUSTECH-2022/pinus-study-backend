@@ -99,7 +99,13 @@ func LogIn(db *sql.DB, nameOrEmail string, password string) (bool, bool, bool, i
 		isSignedUp        bool
 	)
 
-	rows, err := db.Query("SELECT password, salt, id, is_verified FROM Users WHERE email = $1 OR username = $1", nameOrEmail)
+	sql_statement := `
+	SELECT password, salt, id, is_verified 
+	FROM Users 
+	WHERE LOWER(email) = LOWER($1) OR LOWER(username) = LOWER($1);
+	`
+
+	rows, err := db.Query(sql_statement, nameOrEmail)
 
 	defer rows.Close()
 
@@ -306,7 +312,7 @@ func MakePasswordRecovery(db *sql.DB, email string, secretCode string) (bool, bo
 	sql_get_user_id := `
 	SELECT u.id
 	FROM users u
-	WHERE u.email = $1
+	WHERE LOWER(u.email) = LOWER($1);
 	`
 
 	var userid int
